@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Notas y Comentarios</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            background: #f8fafc;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            padding: 32px 40px;
+        }
+        h2 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+        th, td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        th {
+            background: #e0e7ff;
+            color: #2563eb;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .comentario {
+            color: #64748b;
+            font-style: italic;
+        }
+        .btn-volver {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 12px 28px;
+            background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+            transition: background 0.2s, transform 0.2s;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
+        .btn-volver:hover {
+            background: linear-gradient(90deg, #1e40af 0%, #38bdf8 100%);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 4px 16px rgba(37,99,235,0.18);
+            color: #fff;
+        }
+        .btn-volver i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Notas y Comentarios de tus hijos</h2>
+        {% if notas %}
+            <table>
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Materia</th>
+                    <th>Nota</th>
+                    <th>Comentario</th>
+                </tr>
+                {% for nota in notas %}
+                <tr>
+                    <td>{{ nota.nombre_estudiante }}</td>
+                    <td>{{ nota.nombre_materia }}</td>
+                    <td>{{ nota.nota }}</td>
+                    <td class="comentario">{{ nota.comentario }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No hay notas ni comentarios registrados.</p>
+        {% endif %}
+        <a href="{{ url_for('dashboard') }}" class="btn-volver">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+        </a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obtener Usuarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        form {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        select {
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            min-width: 200px;
+        }
+
+        .button-group {
+            display: inline-flex;
+            gap: 1rem;
+        }
+
+        button,
+        .btn-back {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #4361ee;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        button:hover,
+        .btn-back:hover {
+            background-color: #3a56d4;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            color: #4361ee;
+            margin-bottom: 1rem;
+        }
+
+        .card ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .card ul li {
+            font-size: 1rem;
+            color: #212529;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Obtener Usuarios</h1>
+
+        <!-- Formulario para seleccionar el rol -->
+        <form method="POST" action="{{ url_for('obtener_usuarios') }}">
+            <div class="form-group">
+                <label for="rol">Selecciona un rol:</label>
+                <select name="rol" id="rol" required>
+                    <option value="" disabled selected>Selecciona un rol</option>
+                    {% for rol in roles %}
+                    <option value="{{ rol }}" {% if rol == rol_seleccionado %}selected{% endif %}>{{ rol.capitalize() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="button-group">
+                <button type="submit">Obtener Usuarios</button>
+                <a href="{{ url_for('gestionar_usuarios') }}" class="btn-back">Volver</a>
+            </div>
+        </form>
+
+        <!-- Listado de usuarios -->
+        {% if usuarios %}
+        <div class="card">
+            <h2>Usuarios del rol: {{ rol_seleccionado.capitalize() }}</h2>
+            <ul>
+                {% for usuario in usuarios %}
+                <li>{{ usuario['nombre'] }} - {{ usuario['correo'] }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% elif rol_seleccionado %}
+        <p>No se encontraron usuarios para el rol seleccionado.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

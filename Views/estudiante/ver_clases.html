@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario de Clases</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #212529;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4361ee;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        table th, table td {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #4361ee;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .btn-back {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #4361ee;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        .btn-back:hover {
+            background-color: #3a56d4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Horario de Clases</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Materia</th>
+                    <th>Profesor</th>
+                    <th>Día</th>
+                    <th>Hora</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if horario %}
+                    {% for clase in horario %}
+                    <tr>
+                        <td>{{ clase.materia }}</td>
+                        <td>{{ clase.profesor if clase.profesor else 'No asignado' }}</td>
+                        <td>{{ clase.dia_semana }}</td>
+                        <td>{{ clase.hora_inicio }} - {{ clase.hora_fin }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4">No tienes clases registradas.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <a href="/estudiante/dashboard" class="btn-back">Volver al Dashboard</a>
+    </div>
+</body>
+</html>

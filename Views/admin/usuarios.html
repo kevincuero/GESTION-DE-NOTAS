@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 2rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        /* Estilo para centrar y agrandar la card de agregar usuario */
+        .card-agregar {
+            margin: 0 auto 2rem auto;
+            max-width: 500px;
+            background: linear-gradient(135deg, #4361ee 60%, #5f8fff 100%);
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(67, 97, 238, 0.15);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-agregar h2 {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+        .card-agregar p {
+            font-size: 1.15rem;
+            color: #e0e7ff;
+            margin-bottom: 2rem;
+        }
+        .card-agregar a {
+            display: inline-block;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4361ee;
+            background-color: #fff;
+            padding: 1rem 2.5rem;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 8px rgba(67, 97, 238, 0.10);
+        }
+        .card-agregar a:hover {
+            background: #e0e7ff;
+            color: #2746b0;
+        }
+        .btn-back {
+            display: block;
+            width: fit-content;
+            margin: 2rem auto 0;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #6c757d;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .btn-back:hover {
+            background-color: #5a6268;
+        }
+        /* Estilos para la tabla */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f1f3f5;
+            color: #495057;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .boton-modificar, .boton-eliminar {
+            display: inline-block;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .boton-modificar {
+            background-color: #4361ee;
+            color: #fff;
+        }
+        .boton-modificar:hover {
+            background-color: #2746b0;
+        }
+        .boton-eliminar {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .boton-eliminar:hover {
+            background-color: #c82333;
+        }
+        /* Dropdown filtro rol */
+        #btn-filtro-rol {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 0.3rem;
+            vertical-align: middle;
+            font-size: 1rem;
+        }
+        #dropdown-filtro-rol {
+            display: none;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 2.2rem;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            z-index: 10;
+        }
+        #dropdown-filtro-rol ul {
+            list-style: none;
+            margin: 0;
+            padding: 0.5rem 0;
+            min-width: 120px;
+        }
+        #dropdown-filtro-rol li a {
+            display: block;
+            padding: 0.4rem 1rem;
+            color: #212529;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        #dropdown-filtro-rol li a:hover {
+            background: #f1f3f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestión de Usuarios</h1>
+        <!-- Card centrada y grande para agregar usuario -->
+        <div class="card-agregar">
+            <h2>Agregar Usuario</h2>
+            <p>Registra un nuevo usuario en el sistema.</p>
+            <a href="{{ url_for('agregar_usuario') }}">Ir a Agregar</a>
+        </div>
+        <!-- Tabla de usuarios con botón eliminar -->
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th style="position: relative;">
+                        Rol
+                        <button id="btn-filtro-rol" title="Filtrar por rol">▼</button>
+                        <div id="dropdown-filtro-rol">
+                            <ul>
+                                <li><a href="#" class="opcion-filtro-rol" data-rol="todos">Todos</a></li>
+                                <li><a href="#" class="opcion-filtro-rol" data-rol="admin">Admin</a></li>
+                                <li><a href="#" class="opcion-filtro-rol" data-rol="profesor">Profesor</a></li>
+                                <li><a href="#" class="opcion-filtro-rol" data-rol="estudiante">Estudiante</a></li>
+                                <li><a href="#" class="opcion-filtro-rol" data-rol="padre">Padre</a></li>
+                            </ul>
+                        </div>
+                    </th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.id }}</td>
+                    <td>{{ usuario.nombre }}</td>
+                    <td>{{ usuario.correo }}</td>
+                    <td>{{ usuario.rol }}</td>
+                    <td>
+                        <a href="{{ url_for('editar_usuario', id=usuario.id) }}" class="boton-modificar">Modificar</a>
+                        <form action="{{ url_for('eliminar_usuario', id=usuario.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="boton-eliminar" onclick="return confirm('¿Seguro que deseas eliminar este usuario?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- Botón de regresar -->
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-back">Volver</a>
+    </div>
+    <script>
+    // Mostrar/ocultar el dropdown al hacer click en la flechita
+    const btnFiltroRol = document.getElementById('btn-filtro-rol');
+    const dropdownFiltroRol = document.getElementById('dropdown-filtro-rol');
+    btnFiltroRol.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdownFiltroRol.style.display = dropdownFiltroRol.style.display === 'block' ? 'none' : 'block';
+    });
+    // Ocultar el dropdown si se hace click fuera
+    document.addEventListener('click', function() {
+        dropdownFiltroRol.style.display = 'none';
+    });
+    // Filtrar filas al seleccionar una opción
+    document.querySelectorAll('.opcion-filtro-rol').forEach(function(opcion) {
+        opcion.addEventListener('click', function(e) {
+            e.preventDefault();
+            const rolSeleccionado = this.getAttribute('data-rol');
+            const filas = document.querySelectorAll('table tbody tr');
+            filas.forEach(function(fila) {
+                const rol = fila.querySelector('td:nth-child(4)').textContent.trim().toLowerCase();
+                if (rolSeleccionado === 'todos' || rol === rolSeleccionado) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+            dropdownFiltroRol.style.display = 'none';
+        });
+    });
+    </script>
+</body>
+</html>

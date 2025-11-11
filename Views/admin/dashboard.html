@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Configuración básica del documento -->
+    <meta charset="UTF-8"> <!-- Codificación de caracteres -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsive design -->
+    <title>Dashboard - Administrador</title> <!-- Título de la página -->
+    
+    <!-- Hojas de estilo -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> <!-- Estilos locales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Iconos FontAwesome -->
+    
+    <!-- Librerías JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Gráficos Chart.js -->
+    
+    <!-- Estilos CSS internos -->
+    <style>
+        /* Estilos generales del cuerpo del documento */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f1f3f9;
+        }
+
+        /* Layout principal: sidebar + contenido */
+        .layout {
+            display: flex;
+            min-height: 100vh; /* Ocupa al menos el 100% del viewport height */
+        }
+
+        /* Estilos para la barra lateral (sidebar) */
+        .sidebar {
+            width: 250px; /* Ancho fijo */
+            background-color: #1e1e2d; /* Color de fondo oscuro */
+            color: #fff; /* Texto blanco */
+            display: flex;
+            flex-direction: column; /* Elementos en columna */
+            padding: 2rem 1rem; /* Espaciado interno */
+        }
+
+        /* Título del panel */
+        .sidebar h2 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #4cc9f0; /* Color azul claro */
+        }
+
+        /* Estilos para los enlaces del menú */
+        .sidebar a {
+            color: #c4c4c4; /* Color gris claro */
+            padding: 0.8rem 1rem;
+            margin: 0.3rem 0;
+            text-decoration: none;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem; /* Espacio entre icono y texto */
+            transition: background 0.3s; /* Transición suave */
+        }
+
+        /* Efecto hover para los enlaces */
+        .sidebar a:hover {
+            background-color: #2e2e42; /* Fondo más claro al pasar el mouse */
+            color: #fff; /* Texto blanco */
+        }
+
+        /* Contenido principal */
+        .main-content {
+            flex: 1; /* Ocupa todo el espacio restante */
+            padding: 2rem;
+            background-color: #f9fbfd; /* Fondo claro */
+        }
+
+        /* Cabecera del dashboard */
+        .dashboard-header-top {
+            margin-bottom: 1rem;
+        }
+
+        /* Título principal */
+        .dashboard-header-top h1 {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        /* Línea divisoria */
+        .dashboard-header-top hr {
+            margin-top: 0.5rem;
+            border: none;
+            border-top: 2px solid #ccc;
+            width: 100%;
+        }
+
+        /* Grid de estadísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive: mínimo 200px */
+            gap: 1.5rem; /* Espacio entre elementos */
+            margin-top: 2rem;
+        }
+
+        /* Tarjetas de estadísticas */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* Sombra suave */
+            text-align: center;
+        }
+
+        /* Contenedor del gráfico */
+        .chart-container {
+            margin-top: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08); /* Sombra suave */
+        }
+
+        /* Botón de cerrar sesión */
+        .btn-logout {
+            background-color: #f72585; /* Color rosa */
+            color: white;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<!-- Estructura principal del layout -->
+<div class="layout">
+    <!-- Barra lateral de navegación -->
+    <div class="sidebar">
+        <h2>Admin Panel</h2> <!-- Título del panel -->
+        
+        <!-- Enlaces de navegación -->
+        <a href="/admin/dashboard"><i class="fas fa-home"></i> Dashboard</a> <!-- Inicio -->
+        <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a> <!-- Gestión de usuarios -->
+        <a href="/admin/inscripciones"><i class="fas fa-users"></i> Inscripciones</a> <!-- Gestión de inscripciones -->
+        <a href="/admin/materias"><i class="fas fa-book"></i> Materias</a> <!-- Gestión de materias -->
+        <a href="/admin/horarios"><i class="fas fa-calendar-alt"></i> Horarios</a> <!-- Gestión de horarios -->
+        <a href="/admin/asignar_padre"><i class="fas fa-user-friends"></i> Asignar Acudiente</a> <!-- Nueva opción -->
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a> <!-- Cerrar sesión -->
+    </div>
+
+    <!-- Contenido principal del dashboard -->
+    <div class="main-content">
+        <!-- Cabecera con saludo al usuario -->
+        <div class="dashboard-header-top">
+            <h1><strong>Bienvenido, {{ usuario['nombre'] }}</strong></h1> <!-- Nombre del usuario logueado -->
+            <hr> <!-- Línea divisoria -->
+        </div>
+
+        <!-- Sección de estadísticas -->
+        <div class="stats-grid">
+            <!-- Tarjeta: Total usuarios -->
+            <div class="stat-card">
+                <h3>Usuarios Totales</h3>
+                <p class="stat-value">{{ stats['total_usuarios'] }}</p> <!-- Valor dinámico desde backend -->
+            </div>
+            
+            <!-- Tarjeta: Total materias -->
+            <div class="stat-card">
+                <h3>Materias</h3>
+                <p class="stat-value">{{ stats['total_materias'] }}</p> <!-- Valor dinámico desde backend -->
+            </div>
+            
+            <!-- Tarjeta: Total horarios -->
+            <div class="stat-card">
+                <h3>Horarios</h3>
+                <p class="stat-value">{{ stats['total_horarios'] }}</p> <!-- Valor dinámico desde backend -->
+            </div>
+            
+            <!-- Tarjeta: Total inscripciones (nueva) -->
+            <div class="stat-card">
+                <h3>Inscripciones</h3>
+                <p class="stat-value">{{ stats['total_inscripciones'] }}</p> <!-- Valor dinámico desde backend -->
+            </div>
+        </div>
+
+        <!-- Sección del gráfico -->
+        <div class="chart-container">
+            <canvas id="dashboardChart"></canvas> <!-- Canvas para el gráfico -->
+        </div>
+    </div>
+</div>
+
+<!-- Script para generar el gráfico -->
+<script>
+    // Obtener el contexto del canvas
+    const ctx = document.getElementById('dashboardChart').getContext('2d');
+    
+    // Convertir los datos de estadísticas desde Flask/Jinja2 a objeto JavaScript
+    const stats = JSON.parse('{{ stats | tojson }}');
+
+    // Crear nuevo gráfico de barras
+    new Chart(ctx, {
+        type: 'bar', // Tipo de gráfico
+        data: {
+            labels: ['Usuarios', 'Materias', 'Horarios', 'Inscripciones'], // Etiquetas
+            datasets: [{
+                label: 'Totales',
+                data: [
+                    stats.total_usuarios, 
+                    stats.total_materias, 
+                    stats.total_horarios, 
+                    stats.total_inscripciones
+                ], // Datos dinámicos
+                backgroundColor: [
+                    '#4361ee', // Azul para usuarios
+                    '#4cc9f0', // Celeste para materias
+                    '#f8961e', // Naranja para horarios
+                    '#7209b7'  // Morado para inscripciones
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true, // Gráfico responsive
+            plugins: { 
+                legend: { 
+                    display: false // Ocultar leyenda
+                } 
+            }
+        }
+    });
+</script>
+</body>
+</html>

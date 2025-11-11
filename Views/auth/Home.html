@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ebook Study - Control y gestión Académica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --danger: #dc2626;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --gray: #64748b;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        a:focus-visible, button:focus-visible {
+            outline: 3px solid var(--primary-dark);
+            outline-offset: 3px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--white);
+            border: 2px solid var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            line-height: 1.2;
+            color: var(--white);
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: opacity 0.2s;
+        }
+
+        nav a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .btn-login {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        .btn-login:hover {
+            background: var(--light);
+        }
+
+        .btn-registro {
+            background: var(--primary-dark);
+            color: var(--white);
+        }
+
+        .btn-registro:hover {
+            background: #1e40af;
+        }
+
+        main {
+            margin-top: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 3rem;
+            color: var(--primary);
+            max-width: 900px;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            color: var(--dark);
+        }
+
+        .card-description {
+            font-size: 0.875rem;
+            font-weight: 400;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: var(--gray);
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-link {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .card-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .external-icon {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--light);
+            transition: all 0.2s;
+        }
+
+        .card:hover .external-icon {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        footer {
+            background-color: var(--dark);
+            color: var(--white);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        footer p {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+        }
+
+        @media (max-width: 1024px) {
+            .cards-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav {
+                display: none;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 1.75rem;
+                margin-bottom: 2rem;
+            }
+
+            .auth-buttons {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header role="banner">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon" aria-hidden="true">📚</div>
+                <div class="logo-text">EBOOK STUDY</div>
+            </div>
+            
+            <nav role="navigation" aria-label="Navegación principal">
+                <a href="#que-hacemos" tabindex="0">Qué hacemos</a>
+                <a href="#a-quien-servimos" tabindex="0">A quién servimos</a>
+                <a href="#quienes-somos" tabindex="0">Quiénes somos</a>
+                <a href="#recursos" tabindex="0">Recursos de aprendizaje</a>
+            </nav>
+            
+            <div class="auth-buttons">
+                <a class="btn btn-login" href="{{ url_for('login') }}">Iniciar sesión</a>
+                <a class="btn btn-registro" href="{{ url_for('register') }}">Registrarse</a>
+            </div>
+        </div>
+    </header>
+
+    <main id="contenido-principal" role="main">
+        <h1>Bienvenido a Ebook Study Control y gestión Académica</h1>
+
+        <section class="cards-container" aria-label="Sección de artículos informativos">
+            <article class="card">
+                <img src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=600&h=400&fit=crop" alt="Laptop junto a una taza de café y cuaderno" class="card-image">
+                <div class="card-content">
+                    <h2 class="card-title">Información sobre el software:</h2>
+                    <p class="card-description">Usabilidad del software en docentes, instituciones y estudiantes de nivel autónoma.</p>
+                    <div class="card-footer">
+                        <a href="#" class="card-link" aria-label="Leer más sobre información del software">Seguir leyendo...</a>
+                        <div class="external-icon" aria-hidden="true">↗</div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="card">
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=400&fit=crop" alt="Estudiante trabajando en escritorio con portátil" class="card-image">
+                <div class="card-content">
+                    <h2 class="card-title">Desarrollo sostenible para instituciones Académicas:</h2>
+                    <p class="card-description">Potenciando más del 100% de las tareas diarias en la continuidad académica</p>
+                    <div class="card-footer">
+                        <a href="#" class="card-link" aria-label="Leer más sobre desarrollo sostenible">Seguir leyendo...</a>
+                        <div class="external-icon" aria-hidden="true">↗</div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="card">
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop" alt="Pantalla con gráficos y análisis de datos" class="card-image">
+                <div class="card-content">
+                    <h2 class="card-title">Uso de nuevas tecnologías</h2>
+                    <p class="card-description">Nuevas implementaciones de sistemas adecuadas para el uso académico y estudiantil</p>
+                    <div class="card-footer">
+                        <a href="#" class="card-link" aria-label="Leer más sobre uso de nuevas tecnologías">Seguir leyendo...</a>
+                        <div class="external-icon" aria-hidden="true">↗</div>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <footer role="contentinfo">
+        <p>&copy; 2025 Ebook Study. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>

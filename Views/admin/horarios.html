@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Horarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 2rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px; /* Espacio uniforme entre todos los campos */
+            margin-bottom: 2rem;
+        }
+        label {
+            font-size: 1rem;
+            color: #212529;
+            margin-bottom: 0.5rem;
+        }
+        select, input[type="time"] {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            color: #212529;
+            transition: border-color 0.2s;
+        }
+        select:focus, input[type="time"]:focus {
+            border-color: #4361ee;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #4361ee;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-bottom: 1rem;
+        }
+        button:hover {
+            background-color: #3a56d4;
+            transform: translateY(-2px);
+        }
+        .btn-back {
+            background-color: #6c757d;
+        }
+        .btn-back:hover {
+            background-color: #5a6268;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        table th, table td {
+            text-align: left;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f8f9fa;
+            color: #4361ee;
+            font-weight: bold;
+        }
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestión de Horarios</h1>
+        <form method="POST" action="{{ url_for('gestionar_horarios_admin') }}">
+            <div>
+                <label for="id_estudiante">Estudiante:</label>
+                <select name="id_estudiante" id="id_estudiante" required>
+                    <option value="">Seleccione un estudiante</option>
+                    {% for estudiante in estudiantes %}
+                        <option value="{{ estudiante.id }}">{{ estudiante.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="id_profesor">Profesor:</label>
+                <select name="id_profesor" id="id_profesor" required>
+                    <option value="">Seleccione un profesor</option>
+                    {% for profesor in profesores %}
+                        <option value="{{ profesor.id }}">{{ profesor.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="id_materia">Materia:</label>
+                <select name="id_materia" id="id_materia" required>
+                    <option value="">Seleccione una materia</option>
+                    {% for materia in materias %}
+                        <option value="{{ materia.id }}">{{ materia.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="dia_semana">Día de la Semana:</label>
+                <select name="dia_semana" id="dia_semana" required>
+                    <option value="">Seleccione un día</option>
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                </select>
+            </div>
+            <div>
+                <label for="hora_inicio">Hora de Inicio:</label>
+                <input type="time" name="hora_inicio" id="hora_inicio" required>
+            </div>
+            <div>
+                <label for="hora_fin">Hora de Fin:</label>
+                <input type="time" name="hora_fin" id="hora_fin" required>
+            </div>
+            <button type="submit">Agregar Horario</button>
+        </form>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ID Estudiante</th>
+                    <th>Materia</th>
+                    <th>Día de la Semana</th>
+                    <th>Hora de Inicio</th>
+                    <th>Hora de Fin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for horario in horarios %}
+                <tr>
+                    <td>{{ horario.id }}</td>
+                    <td>{{ horario.id_estudiante }}</td>
+                    <td>{{ horario.materia }}</td>
+                    <td>{{ horario.dia_semana }}</td>
+                    <td>{{ horario.hora_inicio }}</td>
+                    <td>{{ horario.hora_fin }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-back" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;background:#6c757d;color:#fff;text-decoration:none;font-weight:bold;transition:background 0.2s;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16">
+            <path d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8z"/>
+            </svg>
+            Volver al Menú Principal
+        </a>
+    </div>
+</body>
+</html>

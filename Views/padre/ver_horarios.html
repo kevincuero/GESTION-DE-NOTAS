@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Materias inscritas de tus hijos</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #f0f4ff 0%, #dbeafe 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .horarios-container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+            padding: 36px 40px 32px 40px;
+        }
+        h2 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 28px;
+            letter-spacing: 1px;
+        }
+        h3 {
+            color: #1e293b;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            font-size: 1.25rem;
+            border-left: 5px solid #2563eb;
+            padding-left: 12px;
+            background: #f1f5fd;
+            border-radius: 6px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 18px;
+        }
+        li {
+            background: #e0e7ff;
+            margin-bottom: 10px;
+            padding: 14px 18px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.07);
+            display: flex;
+            align-items: center;
+            font-size: 1.05rem;
+        }
+        li strong {
+            color: #2563eb;
+            margin-right: 10px;
+        }
+        .no-materias, .no-hijos {
+            color: #64748b;
+            background: #fef9c3;
+            border-left: 4px solid #facc15;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 10px 28px;
+            background: #2563eb;
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+        }
+        a:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="horarios-container">
+        <h2>Materias inscritas de tus hijos</h2>
+        {% if materias_por_estudiante %}
+            {% for estudiante, materias in materias_por_estudiante.items() %}
+                <h3>{{ estudiante }}</h3>
+                {% if materias %}
+                    <ul>
+                        {% for materia in materias %}
+                            <li>
+                                <strong>{{ materia.nombre }}</strong> - {{ materia.descripcion }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="no-materias">No tiene materias inscritas.</div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="no-hijos">No tienes hijos registrados.</div>
+        {% endif %}
+        <a href="{{ url_for('dashboard') }}">Volver al Dashboard</a>
+    </div>
+</body>
+</html>

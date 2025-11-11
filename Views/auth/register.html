@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrarse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #4361ee;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #3a56d4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Registrarse</h1>
+        <form method="POST" action="{{ url_for('register') }}">
+            <label for="nombre">Nombre Completo:</label>
+            <input type="text" name="nombre" id="nombre" required>
+
+            <label for="correo">Correo:</label>
+            <input type="email" name="correo" id="correo" required>
+
+            <label for="rol">Rol:</label>
+            <select name="rol" id="rol" required>
+                <option value="" disabled selected>Selecciona un rol</option>
+                <option value="admin">Administrador</option>
+                <option value="profesor">Profesor</option>
+                <option value="estudiante">Estudiante</option>
+                <option value="padre">Padre</option>
+            </select>
+
+            <label for="contraseña">Contraseña:</label>
+            <input type="password" name="contraseña" id="contraseña" required>
+
+            <button type="submit">Registrarse</button>
+        </form>
+    </div>
+</body>
+</html>

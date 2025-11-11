@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Materias</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        table th, table td {
+            text-align: left;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #f8f9fa;
+            color: #4361ee;
+            font-weight: bold;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        label {
+            font-size: 1rem;
+            color: #212529;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Asegura el mismo tipo de letra */
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Asegura el mismo tipo de letra */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+            color: #212529;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #4361ee;
+            outline: none;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #4361ee;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        button:hover {
+            background-color: #3a56d4;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background-color: #6c757d;
+        }
+
+        .btn-back:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestión de Materias</h1>
+
+        <!-- Formulario para agregar materias -->
+        <form method="POST" action="{{ url_for('gestionar_materias') }}">
+            <label for="nombre_materia">Nombre de la Materia:</label>
+            <input type="text" name="nombre_materia" id="nombre_materia" placeholder="Ejemplo: Matemáticas" required>
+
+            <label for="descripcion">Descripción:</label>
+            <textarea name="descripcion" id="descripcion" rows="3" placeholder="Ejemplo: Clase de matemáticas básicas" required></textarea>
+
+            <button type="submit">Agregar Materia</button>
+        </form>
+
+        <!-- Tabla de materias -->
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for materia in materias %}
+                <tr>
+                    <td>{{ materia['id'] }}</td>
+                    <td>{{ materia['nombre'] }}</td>
+                    <td>{{ materia['descripcion'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Botón de regresar -->
+        <a href="{{ url_for('admin_dashboard') }}" style="text-decoration: none;">
+            <button type="button" class="btn-back">Volver</button>
+        </a>
+    </div>
+</body>
+</html>

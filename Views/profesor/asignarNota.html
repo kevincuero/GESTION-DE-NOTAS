@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignar Nota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            font-size: 1rem;
+            color: #212529;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        select, input, textarea {
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            color: #212529;
+            transition: border-color 0.2s;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.8rem;
+            resize: vertical;
+            min-height: 40px;
+            margin-bottom: 0;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            border-color: #4361ee;
+            outline: none;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #4361ee;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        button:hover {
+            background-color: #3a56d4;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background-color: #6c757d;
+        }
+
+        .btn-back:hover {
+            background-color: #5a6268;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        table th, table td {
+            text-align: left;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        table th {
+            background-color: #f8f9fa;
+            color: #4361ee;
+            font-weight: bold;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        /* Ajuste para inputs en celdas */
+        .nota-input {
+            width: 90px;
+            min-width: 70px;
+            max-width: 120px;
+            margin-bottom: 0;
+            display: block;
+        }
+        .comentario-textarea {
+            min-width: 120px;
+            max-width: 100%;
+            min-height: 40px;
+            margin-bottom: 0;
+            display: block;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Asignar Nota</h1>
+        <form method="POST" action="{{ url_for('asignar_nota') }}">
+            <label for="id_materia">Selecciona una materia:</label>
+            <select name="id_materia" id="id_materia" required>
+                <option value="" disabled selected>-- Selecciona una materia --</option>
+                {% for materia in materias %}
+                <option value="{{ materia['id'] }}">{{ materia['nombre'] }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Buscar Estudiantes</button>
+        </form>
+
+        {% if estudiantes %}
+        <form method="POST" action="{{ url_for('asignar_nota') }}">
+            <input type="hidden" name="id_materia" value="{{ request.form.get('id_materia') }}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre del Estudiante</th>
+                        <th>Correo</th>
+                        <th>Nota</th>
+                        <th>Comentario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estudiante in estudiantes %}
+                    <tr>
+                        <td>{{ estudiante['estudiante'] }}</td>
+                        <td>{{ estudiante['correo'] }}</td>
+                        <td>
+                            <input class="nota-input" type="number" name="nota[]" min="0" max="100" required>
+                        </td>
+                        <td>
+                            <textarea class="comentario-textarea" name="comentario[]" rows="2" placeholder="Escribe un comentario..."></textarea>
+                        </td>
+                        <input type="hidden" name="id_estudiante[]" value="{{ estudiante['id'] }}">
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit">Asignar Nota</button>
+        </form>
+        {% endif %}
+
+        <!-- Botón de regresar -->
+        <a href="{{ url_for('profesor_dashboard') }}" style="text-decoration: none;">
+            <button type="button" class="btn-back">Volver</button>
+        </a>
+    </div>
+</body>
+</html>

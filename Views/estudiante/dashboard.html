@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Estudiante</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #ebf0ff;
+            --primary-dark: #3a56d4;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: var(--dark);
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .welcome-title {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout:hover {
+            background-color: #d31642;
+            transform: translateY(-2px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--primary);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-content {
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            gap: 0.3rem;
+            transition: all 0.2s;
+        }
+
+        .card-link:hover {
+            gap: 0.5rem;
+        }
+
+        .activities-section {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .activity-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .activity-item {
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-top: 0.2rem;
+        }
+
+        .activity-done {
+            color: var(--success);
+        }
+
+        .activity-pending {
+            color: var(--warning);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            margin: 0 0 0.2rem 0;
+            font-weight: 500;
+        }
+
+        .activity-time {
+            color: var(--gray);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .estadisticas-section {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .estadisticas-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1 class="welcome-title">Bienvenido, {{ usuario['nombre'] }}</h1>
+            <button class="btn-logout" onclick="window.location.href='/logout'">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h2 class="card-title"><i class="fas fa-book-open"></i> Mis Notas</h2>
+                <p class="card-content">Consulta tus calificaciones y progreso académico.</p>
+                <a href="/estudiante/ver_notas" class="card-link">
+                    Ver detalles <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="dashboard-card">
+                <h2 class="card-title"><i class="fas fa-calendar-alt"></i> Horario</h2>
+                <p class="card-content">Revisa tus clases y actividades programadas.</p>
+                <a href="/estudiante/ver_clases" class="card-link">
+                    Ver detalles <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="dashboard-card">
+                <h2 class="card-title"><i class="fas fa-comments"></i> Comentarios</h2>
+                <p class="card-content">
+                    {% if comentarios and comentarios|length > 0 %}
+                        {{ comentarios[0].comentario }}
+                    {% else %}
+                        No tienes comentarios de profesores.
+                    {% endif %}
+                </p>
+                {% if comentarios and comentarios|length > 0 %}
+                <a href="#" class="card-link" onclick="mostrarComentario(
+                    '{{ comentarios[0].profesor }}',
+                    '{{ comentarios[0].materia }}',
+                    `{{ comentarios[0].comentario | replace('\n', '\\n') }}`
+                )">
+                    Ver detalles <i class="fas fa-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <section class="estadisticas-section">
+            <h2 class="section-title"><i class="fas fa-chart-bar"></i> Estadísticas de Materias</h2>
+            {% if estadisticas and estadisticas|length > 0 %}
+                <ul class="estadisticas-list" style="list-style:none; padding:0;">
+                    {% for est in estadisticas %}
+                    <li style="margin-bottom:1.5rem;">
+                        <div style="font-weight:600; margin-bottom:0.3rem;">{{ est.materia }}</div>
+                        <div style="background:#e2e8f0; border-radius:6px; overflow:hidden; height:24px; position:relative;">
+                            <div style="background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); box-shadow: 0 2px 8px rgba(67,233,123,0.15);">
+                                {{ est.promedio if est.promedio else 'Sin notas' }}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No hay estadísticas disponibles.</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <!-- Modal para mostrar detalles del comentario -->
+    <div id="comentarioModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:2rem; border-radius:10px; max-width:400px; margin:auto; position:relative;">
+            <span style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:1.2rem;" onclick="cerrarComentario()">&times;</span>
+            <h3>Comentario del Profesor</h3>
+            <p><strong>Profesor:</strong> <span id="profesorComentario"></span></p>
+            <p><strong>Materia:</strong> <span id="materiaComentario"></span></p>
+            <p><strong>Comentario:</strong></p>
+            <p id="textoComentario"></p>
+        </div>
+    </div>
+
+    <script>
+    function mostrarComentario(profesor, materia, comentario) {
+        document.getElementById('profesorComentario').textContent = profesor;
+        document.getElementById('materiaComentario').textContent = materia;
+        document.getElementById('textoComentario').textContent = comentario;
+        document.getElementById('comentarioModal').style.display = 'flex';
+    }
+    function cerrarComentario() {
+        document.getElementById('comentarioModal').style.display = 'none';
+    }
+    </script>
+</body>
+</html>

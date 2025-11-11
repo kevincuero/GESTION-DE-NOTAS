@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario - Estudiante</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Horario de {{ usuario['nombre'] }}</h1>
+    {% if horario %}
+    <table>
+        <thead>
+            <tr>
+                <th>Día</th>
+                <th>Materia</th>
+                <th>Profesor</th>
+                <th>Hora inicio</th>
+                <th>Hora fin</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for clase in horario %}
+            <tr>
+                <td>{{ clase.dia_semana }}</td>
+                <td>{{ clase.materia }}</td>
+                <td>{{ clase.profesor if clase.profesor else 'No asignado' }}</td>
+                <td>{{ clase.hora_inicio }}</td>
+                <td>{{ clase.hora_fin }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No tienes horario registrado.</p>
+    {% endif %}
+    <a href="/estudiante/ver_clases" class="btn-back">Volver al Dashboard</a>
+</body>
+</html>

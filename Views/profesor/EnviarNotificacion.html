@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enviar Notificación</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 2rem;
+            color: #212529;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 2rem;
+            color: #4361ee;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        label {
+            font-size: 1rem;
+            color: #212529;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+            color: #212529;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus {
+            border-color: #4361ee;
+            outline: none;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #4361ee;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-bottom: 1rem;
+        }
+        button:hover {
+            background-color: #3a56d4;
+            transform: translateY(-2px);
+        }
+        .btn-back {
+            background-color: #6c757d;
+        }
+        .btn-back:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enviar Notificación</h1>
+        <form method="POST" action="{{ url_for('enviar_notificacion') }}">
+            <label for="nombre_estudiante">Nombre del Estudiante:</label>
+            <input type="text" name="nombre_estudiante" id="nombre_estudiante" required>
+
+            <label for="nombre_padre">Nombre del Padre:</label>
+            <input type="text" name="nombre_padre" id="nombre_padre" required>
+
+            <label for="correo_padre">Correo del Padre:</label>
+            <input type="email" name="correo_padre" id="correo_padre" required>
+
+            <label for="comentario">Comentario:</label>
+            <textarea name="comentario" id="comentario" rows="4" placeholder="Escribe el comentario..." required></textarea>
+
+            <button type="submit">Enviar Notificación</button>
+        </form>
+
+        <!-- Botón de regresar -->
+        <a href="{{ url_for('profesor_dashboard') }}" style="text-decoration: none;">
+            <button type="button" class="btn-back">Volver</button>
+        </a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Inscripciones</title>
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(67,97,238,0.08);
+            padding: 2rem 2.5rem;
+        }
+        h1 {
+            text-align: center;
+            color: #4361ee;
+            margin-bottom: 2rem;
+        }
+        label {
+            font-weight: 500;
+            margin-top: 1rem;
+            display: block;
+            color: #22223b;
+        }
+        select, button, input[type="text"] {
+            width: 100%;
+            padding: 0.7rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.2rem;
+            border-radius: 8px;
+            border: 1px solid #e0e1dd;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4361ee;
+            color: #fff;
+            font-weight: bold;
+            border: none;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #4cc9f0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+            background: #fff;
+        }
+        th, td {
+            padding: 0.8rem;
+            border-bottom: 1px solid #e0e1dd;
+            text-align: center;
+        }
+        th {
+            background: #4361ee;
+            color: #fff;
+        }
+        .acciones-form {
+            display: inline;
+        }
+        .habilitar-select {
+            width: auto;
+            display: inline-block;
+        }
+        .acciones-btn {
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.6rem 1.5rem;
+            margin: 0 2px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .acciones-btn:hover {
+            background: #b02a37;
+        }
+        .modificar-btn {
+            background: #f8961e;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.6rem 1.5rem;
+            margin: 0 2px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .modificar-btn:hover {
+            background: #d68c1b;
+        }
+        .guardar-btn {
+            background: #4361ee;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.6rem 1.5rem;
+            margin: 0 2px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .guardar-btn:hover {
+            background: #3a56d4;
+        }
+        .section-title {
+            color: #4361ee;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .volver-btn {
+            display: inline-block;
+            margin-top: 2.5rem;
+            background: #6c757d;
+            color: #fff;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            padding: 0.8rem 2.5rem;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .volver-btn:hover {
+            background: #5a6268;
+        }
+        .volver-btn::before {
+            content: "← ";
+            font-size: 1.2rem;
+        }
+        .inline-select {
+            width: auto;
+            min-width: 120px;
+            margin: 0 5px;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        tr[id^="fila-editar-"] {
+            display: none;
+        }
+    </style>
+    <script>
+        function mostrarEdicion(idEstudiante, idMateria) {
+            document.getElementById('fila-normal-' + idEstudiante + '-' + idMateria).style.display = 'none';
+            document.getElementById('fila-editar-' + idEstudiante + '-' + idMateria).style.display = 'table-row';
+        }
+        
+        function cancelarEdicion(idEstudiante, idMateria) {
+            document.getElementById('fila-normal-' + idEstudiante + '-' + idMateria).style.display = 'table-row';
+            document.getElementById('fila-editar-' + idEstudiante + '-' + idMateria).style.display = 'none';
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestión de Inscripciones</h1>
+        
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for('gestionar_inscripciones') }}">
+            <label for="id_estudiante">Estudiante:</label>
+            <select name="id_estudiante" id="id_estudiante" required>
+                <option value="">Seleccione un estudiante</option>
+                {% for estudiante in estudiantes %}
+                    {% if estudiante.puede_inscribirse %}
+                    <option value="{{ estudiante.id }}">{{ estudiante.nombre }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            
+            <label for="id_materia">Materia:</label>
+            <select name="id_materia" id="id_materia" required>
+                <option value="">Seleccione una materia</option>
+                {% for materia in materias %}
+                    <option value="{{ materia.id }}">{{ materia.nombre }}</option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit">Agregar Inscripción</button>
+        </form>
+
+        <div class="section-title">Inscripciones actuales</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Materia</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for insc in inscripciones %}
+                <!-- Fila normal -->
+                <tr id="fila-normal-{{ insc.id_estudiante }}-{{ insc.id_materia }}">
+                    <td>{{ estudiantes_dict[insc.id_estudiante].nombre }}</td>
+                    <td>{{ materias_dict[insc.id_materia].nombre }}</td>
+                    <td>
+                        <form class="acciones-form" method="POST" action="{{ url_for('eliminar_inscripcion') }}" style="display:inline;">
+                            <input type="hidden" name="id_estudiante" value="{{ insc.id_estudiante }}">
+                            <input type="hidden" name="id_materia" value="{{ insc.id_materia }}">
+                            <button class="acciones-btn" type="submit" onclick="return confirm('¿Está seguro que desea eliminar esta inscripción?')">Eliminar</button>
+                        </form>
+                        <button class="modificar-btn" type="button" onclick="mostrarEdicion('{{ insc.id_estudiante }}', '{{ insc.id_materia }}')">Modificar</button>
+                    </td>
+                </tr>
+                <!-- Fila edición (oculta por defecto) -->
+                <tr id="fila-editar-{{ insc.id_estudiante }}-{{ insc.id_materia }}">
+                    <td colspan="3">
+                        <form class="acciones-form" method="POST" action="{{ url_for('modificar_inscripcion') }}" style="display:flex; gap:10px; align-items:center; justify-content: center;">
+                            <select name="nuevo_id_estudiante" class="inline-select" required>
+                                {% for estudiante in estudiantes %}
+                                    <option value="{{ estudiante.id }}" {% if estudiante.id == insc.id_estudiante %}selected{% endif %}>{{ estudiante.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="nuevo_id_materia" class="inline-select" required>
+                                {% for materia in materias %}
+                                    <option value="{{ materia.id }}" {% if materia.id == insc.id_materia %}selected{% endif %}>{{ materia.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="id_estudiante" value="{{ insc.id_estudiante }}">
+                            <input type="hidden" name="id_materia" value="{{ insc.id_materia }}">
+                            <button class="guardar-btn" type="submit">Guardar</button>
+                            <button class="acciones-btn" type="button" onclick="cancelarEdicion('{{ insc.id_estudiante }}', '{{ insc.id_materia }}')">Cancelar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">Habilitar inscripción para estudiantes</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Estudiante</th>
+                    <th>¿Puede inscribirse?</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estudiante in estudiantes %}
+                <tr>
+                    <td>{{ estudiante.nombre }}</td>
+                    <td>{{ 'Sí' if estudiante.puede_inscribirse else 'No' }}</td>
+                    <td>
+                        <form class="acciones-form" method="POST" action="{{ url_for('habilitar_estudiante_inscripcion') }}">
+                            <input type="hidden" name="id_estudiante" value="{{ estudiante.id }}">
+                            <select class="habilitar-select" name="puede_inscribirse">
+                                <option value="1" {% if estudiante.puede_inscribirse %}selected{% endif %}>Sí</option>
+                                <option value="0" {% if not estudiante.puede_inscribirse %}selected{% endif %}>No</option>
+                            </select>
+                            <button class="guardar-btn" type="submit">Actualizar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a href="{{ url_for('admin_dashboard') }}" class="volver-btn">Volver al Menú Principal</a>
+    </div>
+</body>
+</html>

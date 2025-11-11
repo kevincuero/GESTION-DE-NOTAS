@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Notas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body style="background:#f8fafd;">
+    <div class="notas-container" style="max-width:540px; margin:3rem auto 0 auto; background:#fff; border-radius:16px; box-shadow:0 6px 32px rgba(67,97,238,0.08); padding:2.5rem 2rem 2rem 2rem; display:flex; flex-direction:column; align-items:center;">
+        <h1 style="margin-bottom:2rem; text-align:center; font-size:2rem; color:#222;">Notas de {{ usuario['nombre'] }}</h1>
+        {% if notas %}
+        <table class="notas-table" style="width:100%; border-collapse:separate; border-spacing:0 0.7rem;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:0.5rem 0.7rem;">Materia</th>
+                    <th style="text-align:left; padding:0.5rem 0.7rem;">Profesor</th>
+                    <th style="text-align:left; padding:0.5rem 0.7rem;">Nota</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for nota in notas %}
+                <tr style="background:#f1f5fa; border-radius:8px;">
+                    <td style="padding:0.6rem 0.7rem; border-radius:8px 0 0 8px;">{{ nota.materia }}</td>
+                    <td style="padding:0.6rem 0.7rem;">{{ nota.profesor if nota.profesor else 'No asignado' }}</td>
+                    <td class="nota {{ 'aprobado' if nota.nota|float >= 3.0 else 'reprobado' }}" style="padding:0.6rem 0.7rem; border-radius:0 8px 8px 0;">
+                        {% if nota.nota is not none %}
+                            {{ nota.nota }}
+                        {% else %}
+                            <span class="status-message">Pendiente</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="margin:2rem 0; color:#888; text-align:center;">No tienes notas registradas.</p>
+        {% endif %}
+        <a href="{{ url_for('estudiante_dashboard') }}" id="volverDashboardBtn" style="display:inline-block; margin:2.5rem auto 0 auto; padding:0.8rem 2.2rem; background:linear-gradient(90deg,#4361ee 60%,#4cc9f0 100%); color:#fff; font-size:1.1rem; font-weight:600; border:none; border-radius:8px; box-shadow:0 4px 16px rgba(67,97,238,0.12); cursor:pointer; text-decoration:none; transition:transform 0.2s, box-shadow 0.2s;">
+            <i class="fas fa-arrow-left" style="margin-right:8px;"></i> Volver al Dashboard
+        </a>
+    </div>
+    <script>
+        // Efecto animado al pasar el mouse
+        const btn = document.getElementById('volverDashboardBtn');
+        btn.addEventListener('mouseenter', function() {
+            btn.style.transform = 'scale(1.06)';
+            btn.style.boxShadow = '0 8px 24px rgba(67,97,238,0.18)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            btn.style.transform = 'scale(1)';
+            btn.style.boxShadow = '0 4px 16px rgba(67,97,238,0.12)';
+        });
+    </script>
+</body>
+</html>

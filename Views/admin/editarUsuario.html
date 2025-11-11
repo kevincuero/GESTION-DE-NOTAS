@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Usuario</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8fafc; }
+        .container { max-width: 500px; margin: 2rem auto; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 2rem; }
+        h1 { color: #4361ee; text-align: center; }
+        label { display: block; margin-top: 1rem; }
+        input, select { width: 100%; padding: 0.5rem; margin-top: 0.5rem; border-radius: 4px; border: 1px solid #ccc; }
+        button, .btn-back { margin-top: 1.5rem; padding: 0.7rem 1.5rem; border: none; border-radius: 6px; background: #4361ee; color: #fff; font-weight: bold; cursor: pointer; }
+        .btn-back { background: #6c757d; text-decoration: none; display: inline-block; text-align: center; }
+        button:hover { background: #3a56d4; }
+        .btn-back:hover { background: #5a6268; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Usuario</h1>
+        <form method="POST">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
+
+            <label for="correo">Correo:</label>
+            <input type="email" id="correo" name="correo" value="{{ usuario.correo }}" required>
+
+            <label for="rol">Rol:</label>
+            <select id="rol" name="rol" required>
+                <option value="admin" {% if usuario.rol == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="profesor" {% if usuario.rol == 'profesor' %}selected{% endif %}>Profesor</option>
+                <option value="estudiante" {% if usuario.rol == 'estudiante' %}selected{% endif %}>Estudiante</option>
+                <option value="padre" {% if usuario.rol == 'padre' %}selected{% endif %}>Padre</option>
+            </select>
+
+            <button type="submit">Guardar Cambios</button>
+            <a href="{{ url_for('gestionar_usuarios') }}" class="btn-back">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>

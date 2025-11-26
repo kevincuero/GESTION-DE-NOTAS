@@ -3,19 +3,28 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from config_email import EMAIL_HOST, EMAIL_HOST_PASSWORD, EMAIL_PORT, EMAIL_HOST_USER
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
 from Config.database_connection import create_connection
 from Controllers.admin_controller import AdminController
 from Controllers.profesor_controller import ProfesorController
 from Controllers.estudiante_controller import EstudianteController
 from Controllers.horario_controller import HorarioController
 from Controllers.autenticacion import AutenticacionController
+from Controllers.indices_controller import IndicesController
+from Controllers.evento_controller import EventoController
 import sqlite3  # O el conector que uses
+import traceback
+import io
+import csv
+import time
 
 app = Flask(__name__, template_folder='Views', static_folder='Static')
 app.secret_key = 'clave_secreta_gestion_estudiantil_2023'
 
+# OAuth (Google) - intenta habilitar sólo si `authlib` está instalada y las credenciales están configuradas.
 # OAuth (Google) - intenta habilitar sólo si `authlib` está instalada y las credenciales están configuradas.
 oauth = None
 try:
@@ -43,6 +52,14 @@ else:
             userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
             client_kwargs={'scope': 'openid email profile'}
         )
+
+# Configuración de subida de archivos (hojas de vida)
+ALLOWED_EXTENSIONS = {'pdf'}
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads', 'hojas')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_db_connection():
     conn = sqlite3.connect('tu_base_de_datos.db')
@@ -721,6 +738,125 @@ def obtener_estudiantes():
         usuario=session['usuario']
     )
 
+
+@app.route('/profesor/hoja_vida')
+def profesor_hoja_vida():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    hoja = None
+    conexion = create_connection()
+    if conexion:
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("SELECT hoja_vida FROM profesores WHERE id = %s", (id_profesor,))
+            fila = cursor.fetchone()
+            if fila:
+                hoja = fila.get('hoja_vida')
+        except Exception as e:
+            app.logger.error(f"Error obteniendo hoja de vida: {e}")
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
+
+    return render_template('profesor/HojadeVida.html', hoja=hoja, usuario=session['usuario'])
+
+
+@app.route('/profesor/subir_hoja', methods=['POST'])
+def subir_hoja():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para realizar esta acción.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    if 'hoja' not in request.files:
+        flash('No se encontró ningún archivo.', 'error')
+        return redirect(url_for('profesor_hoja_vida'))
+
+    archivo = request.files['hoja']
+    if archivo.filename == '':
+        flash('No se seleccionó ningún archivo.', 'error')
+        return redirect(url_for('profesor_hoja_vida'))
+
+    if archivo and allowed_file(archivo.filename):
+        filename = secure_filename(f"{id_profesor}_{int(time.time())}_{archivo.filename}")
+        ruta = os.path.join(UPLOAD_FOLDER, filename)
+        try:
+            archivo.save(ruta)
+            # Actualizar registro en BD
+            conexion = create_connection()
+            if conexion:
+                cursor = conexion.cursor()
+                try:
+                    cursor.execute("UPDATE profesores SET hoja_vida = %s WHERE id = %s", (filename, id_profesor))
+                    conexion.commit()
+                except Exception as e:
+                    conexion.rollback()
+                    app.logger.error(f"Error guardando nombre de archivo en BD: {e}")
+                finally:
+                    try:
+                        cursor.close()
+                    except Exception:
+                        pass
+                    try:
+                        conexion.close()
+                    except Exception:
+                        pass
+
+            flash('Hoja de vida subida correctamente.', 'success')
+        except Exception as e:
+            app.logger.error(f"Error al guardar archivo: {e}")
+            flash('Ocurrió un error al subir el archivo.', 'error')
+    else:
+        flash('Tipo de archivo no permitido. Solo PDF.', 'error')
+
+    return redirect(url_for('profesor_hoja_vida'))
+
+
+@app.route('/profesor/actualizar_hoja', methods=['POST'])
+def actualizar_hoja():
+    # Reutiliza la lógica de subir_hoja (sobrescribe registro y archivo)
+    return subir_hoja()
+
+
+@app.route('/profesor/ver_hoja/<int:id_profesor>')
+def ver_hoja(id_profesor):
+    conexion = create_connection()
+    filename = None
+    if conexion:
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("SELECT hoja_vida FROM profesores WHERE id = %s", (id_profesor,))
+            fila = cursor.fetchone()
+            if fila:
+                filename = fila.get('hoja_vida')
+        except Exception as e:
+            app.logger.error(f"Error obteniendo hoja de vida: {e}")
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
+
+    if not filename:
+        flash('No existe hoja de vida para este profesor.', 'error')
+        return redirect(url_for('profesor_hoja_vida'))
+
+    # Enviar archivo desde carpeta de uploads
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 @app.route('/profesor/asignar_nota', methods=['GET', 'POST'])
 def asignar_nota():
     if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
@@ -733,6 +869,7 @@ def asignar_nota():
 
     if request.method == 'POST':
         id_materia = request.form.get('id_materia')
+        tipo_evaluacion = request.form.get('tipo_evaluacion')
         notas = request.form.getlist('nota[]')
         comentarios = request.form.getlist('comentario[]')
         ids_estudiantes = request.form.getlist('id_estudiante[]')
@@ -742,19 +879,24 @@ def asignar_nota():
         if id_materia and not notas:
             estudiantes = ProfesorController.obtener_estudiantes_por_materia(id_materia)
         # Si hay notas, procesar asignación
-        elif notas and comentarios and ids_estudiantes and id_materia:
+        elif notas and comentarios and ids_estudiantes and id_materia and tipo_evaluacion:
             for i in range(len(ids_estudiantes)):
-                ProfesorController.asignar_nota(
-                    ids_estudiantes[i],
-                    id_profesor,
-                    id_materia,
-                    notas[i],
-                    comentarios[i]
-                )
+                if notas[i]:  # Solo procesar si hay nota
+                    ProfesorController.asignar_nota(
+                        ids_estudiantes[i],
+                        id_profesor,
+                        id_materia,
+                        notas[i],
+                        tipo_evaluacion,
+                        comentarios[i]
+                    )
             flash("Notas asignadas correctamente.", "success")
             return redirect(url_for('asignar_nota'))
         else:
-            flash("Por favor, selecciona una materia.", "error")
+            if not tipo_evaluacion:
+                flash("Por favor, selecciona un tipo de evaluación.", "error")
+            else:
+                flash("Por favor, selecciona una materia.", "error")
 
     return render_template('profesor/asignarNota.html', usuario=session['usuario'], materias=materias, estudiantes=estudiantes, id_materia=id_materia)
 
@@ -797,35 +939,311 @@ def enviar_notificacion():
         flash("No tienes permisos para acceder a esta sección.", "error")
         return redirect(url_for('home'))
 
+    id_profesor = session['usuario']['id']
+    materias = ProfesorController.obtener_materias_asignadas(id_profesor)
+    
     if request.method == 'POST':
-        nombre_estudiante = request.form.get('nombre_estudiante')
-        nombre_padre = request.form.get('nombre_padre')
-        correo_padre = request.form.get('correo_padre')
-        comentario = request.form.get('comentario')
-
-        if nombre_estudiante and nombre_padre and correo_padre and comentario:
-            asunto = f"Notificación sobre {nombre_estudiante}"
-            mensaje = f"Estimado/a {nombre_padre},\n\n{comentario}\n\nAtentamente,\nEl profesor"
-            try:
-                msg = MIMEMultipart()
-                msg['From'] = EMAIL_HOST_USER
-                msg['To'] = correo_padre
-                msg['Subject'] = asunto
-                msg.attach(MIMEText(mensaje, 'plain'))
-
-                server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-                server.starttls()
-                server.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
-                server.sendmail(EMAIL_HOST_USER, correo_padre, msg.as_string())
-                server.quit()
-                flash("Correo enviado correctamente.", "success")
-            except Exception as e:
-                flash(f"Error al enviar correo: {e}", "error")
-        else:
-            flash("Completa todos los campos.", "error")
+        tipo_envio = request.form.get('tipo_envio', 'individual')
+        id_materia = request.form.get('id_materia')
+        titulo = request.form.get('titulo')
+        mensaje = request.form.get('mensaje')
+        
+        if not id_materia or not titulo or not mensaje:
+            flash("Por favor completa todos los campos.", "error")
+            return redirect(url_for('enviar_notificacion'))
+        
+        if tipo_envio == 'individual':
+            id_estudiante = request.form.get('id_estudiante')
+            if not id_estudiante:
+                flash("Selecciona un estudiante.", "error")
+                return redirect(url_for('enviar_notificacion'))
+            
+            from Controllers.notificacion_controller import NotificacionController
+            resultado = NotificacionController.enviar_notificacion_a_estudiante(
+                int(id_estudiante), id_profesor, titulo, mensaje
+            )
+            if resultado['success']:
+                flash(resultado['message'], "success")
+            else:
+                flash(resultado['message'], "error")
+        
         return redirect(url_for('enviar_notificacion'))
+    
+    return render_template('profesor/EnviarNotificacion.html', materias=materias)
 
-    return render_template('profesor/enviarNotificacion.html')
+@app.route('/profesor/enviar_notificacion_grupo', methods=['POST'])
+def enviar_notificacion_grupo():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    id_materia = request.form.get('id_materia')
+    titulo = request.form.get('titulo')
+    mensaje = request.form.get('mensaje')
+    
+    if not id_materia or not titulo or not mensaje:
+        flash("Por favor completa todos los campos.", "error")
+        return redirect(url_for('enviar_notificacion'))
+    
+    from Controllers.notificacion_controller import NotificacionController
+    resultado = NotificacionController.enviar_notificacion_a_clase(
+        int(id_materia), id_profesor, titulo, mensaje
+    )
+    
+    if resultado['success']:
+        flash(resultado['message'], "success")
+    else:
+        flash(resultado['message'], "error")
+    
+    return redirect(url_for('enviar_notificacion'))
+
+@app.route('/api/estudiantes_por_materia/<int:id_materia>', methods=['GET'])
+def estudiantes_por_materia(id_materia):
+    """Retorna estudiantes inscritos en una materia en formato JSON."""
+    estudiantes = ProfesorController.obtener_estudiantes_por_materia(id_materia)
+    # Convertir a formato JSON con id y nombre
+    result = [{'id': e['id'], 'nombre': e['estudiante']} for e in estudiantes]
+    return jsonify(result)
+
+# --------------------------
+# API RUTAS PARA NOTIFICACIONES
+# --------------------------
+@app.route('/api/notificacion/marcar_leida/<int:id_notificacion>', methods=['POST'])
+def api_marcar_notificacion_leida(id_notificacion):
+    """API para marcar una notificación como leída."""
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    from Controllers.notificacion_controller import NotificacionController
+    resultado = NotificacionController.marcar_como_leida(id_notificacion)
+    return jsonify(resultado)
+
+@app.route('/api/notificacion/marcar_todas_leidas', methods=['POST'])
+def api_marcar_todas_notificaciones_leidas():
+    """API para marcar todas las notificaciones como leídas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    id_estudiante = session['usuario']['id']
+    from Controllers.notificacion_controller import NotificacionController
+    resultado = NotificacionController.marcar_todas_como_leidas(id_estudiante)
+    return jsonify(resultado)
+
+@app.route('/api/notificacion/eliminar/<int:id_notificacion>', methods=['DELETE'])
+def api_eliminar_notificacion(id_notificacion):
+    """API para eliminar una notificación."""
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    from Controllers.notificacion_controller import NotificacionController
+    resultado = NotificacionController.eliminar_notificacion(id_notificacion)
+    return jsonify(resultado)
+
+@app.route('/api/notificacion/sin_leer', methods=['GET'])
+def api_notificaciones_sin_leer():
+    """API para obtener el conteo de notificaciones sin leer."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'count': 0}), 401
+    
+    id_estudiante = session['usuario']['id']
+    from Controllers.notificacion_controller import NotificacionController
+    count = NotificacionController.obtener_conteo_no_leidas(id_estudiante)
+    return jsonify({'count': count})
+
+# --------------------------
+# Rutas ÍNDICES DE APRENDIZAJE
+# --------------------------
+@app.route('/profesor/indices', methods=['GET', 'POST'])
+def indices():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    
+    if request.method == 'POST':
+        id_materia = request.form.get('id_materia')
+        if not id_materia:
+            flash("Selecciona una materia.", "error")
+            return redirect(url_for('indices'))
+        session['id_materia_indices'] = int(id_materia)
+    
+    id_materia = session.get('id_materia_indices')
+    materias = ProfesorController.obtener_materias_asignadas(id_profesor)
+    indices_list = []
+    
+    if id_materia:
+        try:
+            indices_list = IndicesController.obtener_indices_con_evaluaciones(id_materia)
+        except Exception as e:
+            flash(f"Error al cargar índices: {str(e)}", "error")
+    
+    return render_template('profesor/indices.html', materias=materias, indices=indices_list, id_materia_actual=id_materia)
+
+@app.route('/profesor/crear_indice', methods=['GET', 'POST'])
+def crear_indice():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    id_materia = session.get('id_materia_indices')
+    
+    if not id_materia:
+        flash("Selecciona una materia primero.", "error")
+        return redirect(url_for('indices'))
+    
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        parcial = request.form.get('parcial')
+        porcentaje = request.form.get('porcentaje')
+        
+        try:
+            porcentaje = float(porcentaje) if porcentaje else 0
+        except ValueError:
+            flash("El porcentaje debe ser un número válido.", "error")
+            return redirect(url_for('crear_indice'))
+        
+        resultado = IndicesController.crear_indice(
+            id_materia=int(id_materia),
+            id_profesor=id_profesor,
+            nombre=nombre,
+            descripcion=descripcion,
+            parcial=parcial,
+            porcentaje=porcentaje
+        )
+        
+        if resultado['success']:
+            flash(resultado['message'], "success")
+            return redirect(url_for('indices'))
+        else:
+            flash(resultado['message'], "error")
+    
+    return render_template('profesor/crear_indice.html', id_materia=id_materia)
+
+@app.route('/profesor/evaluar_indice/<int:id_indice>', methods=['GET', 'POST'])
+def evaluar_indice(id_indice):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    
+    try:
+        indice = IndicesController.obtener_indice_por_id(id_indice)
+        if not indice or indice['id_profesor'] != id_profesor:
+            flash("Índice no encontrado o no tienes permisos.", "error")
+            return redirect(url_for('indices'))
+        
+        if request.method == 'POST':
+            porcentaje_dominio = request.form.get('porcentaje_dominio')
+            comentario = request.form.get('comentario', '').strip()
+            
+            try:
+                porcentaje_dominio = float(porcentaje_dominio)
+                if not (0 <= porcentaje_dominio <= 100):
+                    flash("El porcentaje de dominio debe estar entre 0 y 100.", "error")
+                    return redirect(url_for('evaluar_indice', id_indice=id_indice))
+            except ValueError:
+                flash("El porcentaje debe ser un número válido.", "error")
+                return redirect(url_for('evaluar_indice', id_indice=id_indice))
+            
+            resultado = IndicesController.guardar_evaluacion_indice(
+                id_indice=id_indice,
+                id_profesor=id_profesor,
+                porcentaje_dominio=porcentaje_dominio,
+                comentario=comentario
+            )
+            
+            if resultado['success']:
+                flash(resultado['message'], "success")
+                return redirect(url_for('indices'))
+            else:
+                flash(resultado['message'], "error")
+        
+        evaluaciones = IndicesController.obtener_evaluaciones_indice(id_indice)
+        ultima_evaluacion = evaluaciones[0] if evaluaciones else None
+        
+        return render_template('profesor/evaluar_indice.html', indice=indice, evaluaciones=evaluaciones, ultima_evaluacion=ultima_evaluacion)
+    
+    except Exception as e:
+        flash(f"Error al cargar índice: {str(e)}", "error")
+        return redirect(url_for('indices'))
+
+@app.route('/profesor/editar_indice/<int:id_indice>', methods=['GET', 'POST'])
+def editar_indice(id_indice):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    
+    try:
+        indice = IndicesController.obtener_indice_por_id(id_indice)
+        if not indice or indice['id_profesor'] != id_profesor:
+            flash("Índice no encontrado o no tienes permisos.", "error")
+            return redirect(url_for('indices'))
+        
+        if request.method == 'POST':
+            nombre = request.form.get('nombre')
+            descripcion = request.form.get('descripcion')
+            parcial = request.form.get('parcial')
+            porcentaje = request.form.get('porcentaje')
+            
+            try:
+                porcentaje = float(porcentaje) if porcentaje else 0
+            except ValueError:
+                flash("El porcentaje debe ser un número válido.", "error")
+                return redirect(url_for('editar_indice', id_indice=id_indice))
+            
+            resultado = IndicesController.actualizar_indice(
+                id_indice=id_indice,
+                nombre=nombre,
+                descripcion=descripcion,
+                parcial=parcial,
+                porcentaje=porcentaje
+            )
+            
+            if resultado['success']:
+                flash(resultado['message'], "success")
+                return redirect(url_for('indices'))
+            else:
+                flash(resultado['message'], "error")
+        
+        return render_template('profesor/crear_indice.html', indice=indice, id_materia=indice['id_materia'])
+    
+    except Exception as e:
+        flash(f"Error al cargar índice: {str(e)}", "error")
+        return redirect(url_for('indices'))
+
+@app.route('/profesor/eliminar_indice/<int:id_indice>')
+def eliminar_indice(id_indice):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    
+    try:
+        indice = IndicesController.obtener_indice_por_id(id_indice)
+        if not indice or indice['id_profesor'] != id_profesor:
+            flash("Índice no encontrado o no tienes permisos.", "error")
+            return redirect(url_for('indices'))
+        
+        resultado = IndicesController.eliminar_indice(id_indice)
+        
+        if resultado['success']:
+            flash(resultado['message'], "success")
+        else:
+            flash(resultado['message'], "error")
+        
+        return redirect(url_for('indices'))
+    
+    except Exception as e:
+        flash(f"Error al eliminar índice: {str(e)}", "error")
+        return redirect(url_for('indices'))
 
 # --------------------------
 # Rutas ESTUDIANTE
@@ -911,25 +1329,65 @@ def asignaturas_estudiante():
 # Ruta: Mis Calificaciones (nueva)
 @app.route('/estudiante/calificaciones')
 def calificaciones_estudiante():
+    app.logger.debug(f"Entering calificaciones_estudiante; session usuario: {session.get('usuario')}")
     if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
         flash("No tienes permisos para acceder a esta sección.", "error")
         return redirect(url_for('home'))
     id_estudiante = session['usuario']['id']
     try:
-        datos = EstudianteController.obtener_calificaciones_detalle(id_estudiante)
+        from Controllers.nota_controller import NotaController
+        # Obtener notas agrupadas por materia
+        materias_agrupadas = NotaController.obtener_notas_por_materia_agrupadas(id_estudiante)
+        
+        app.logger.debug(f"Calificaciones obtained: materias={len(materias_agrupadas)}")
         return render_template(
             'estudiante/mis_calificaciones.html',
             usuario=session['usuario'],
-            notas=datos['notas'],
-            notas_por_materia=datos['estadisticas'],
-            promedio_general=datos['promedio_general']
+            materias_agrupadas=materias_agrupadas
         )
     except Exception as e:
-        app.logger.error(f"Error al cargar Calificaciones: {e}")
+        tb = traceback.format_exc()
+        app.logger.error(f"Error al cargar Calificaciones: {e}\n{tb}")
         flash("Ocurrió un error al cargar tus calificaciones.", "error")
         return redirect(url_for('estudiante_dashboard'))
 
 
+@app.route('/estudiante/calificaciones/descargar')
+def descargar_calificaciones():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+    id_estudiante = session['usuario']['id']
+    formato = request.args.get('formato', 'csv')
+    try:
+        datos = EstudianteController.obtener_calificaciones_detalle(id_estudiante)
+        notas = datos.get('notas', [])
+        # Build CSV
+        if formato == 'csv':
+            # Use semicolon delimiter and UTF-8 BOM so Excel (locale-dependent) opens columns correctly
+            si = io.StringIO()
+            writer = csv.writer(si, delimiter=';')
+            writer.writerow(['Materia', 'Nota', 'Comentario'])
+            for n in notas:
+                writer.writerow([n.get('materia'), n.get('nota'), n.get('comentario', '')])
+            output = si.getvalue()
+            si.close()
+            # Prepend BOM so Excel recognizes UTF-8 and splits columns correctly in many locales
+            output = '\ufeff' + output
+            response = app.make_response(output)
+            response.headers['Content-Disposition'] = f'attachment; filename=calificaciones_{id_estudiante}.csv'
+            response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+            return response
+        else:
+            flash('Formato no soportado para descarga.', 'error')
+            return redirect(url_for('calificaciones_estudiante'))
+    except Exception as e:
+        app.logger.error(f"Error al generar descarga de calificaciones: {e}")
+        flash('Ocurrió un error al generar la descarga.', 'error')
+        return redirect(url_for('calificaciones_estudiante'))
+
+
+# Ruta: Mis Notificaciones (nueva)
 # Ruta: Mis Notificaciones (nueva)
 @app.route('/estudiante/notificaciones')
 def notificaciones_estudiante():
@@ -938,12 +1396,114 @@ def notificaciones_estudiante():
         return redirect(url_for('home'))
     id_estudiante = session['usuario']['id']
     try:
-        notificaciones = EstudianteController.obtener_notificaciones(id_estudiante)
+        from Controllers.notificacion_controller import NotificacionController
+        notificaciones = NotificacionController.obtener_notificaciones_estudiante(id_estudiante)
         return render_template('estudiante/mis_notificaciones.html', usuario=session['usuario'], notificaciones=notificaciones)
     except Exception as e:
         app.logger.error(f"Error al cargar Notificaciones: {e}")
         flash("Ocurrió un error al cargar tus notificaciones.", "error")
         return redirect(url_for('estudiante_dashboard'))
+
+
+# API: Obtener detalles de notificación con mensajes
+@app.route('/api/notificacion/<int:id_notificacion>')
+def api_obtener_notificacion(id_notificacion):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    
+    id_estudiante = session['usuario']['id']
+    try:
+        from Controllers.mensaje_controller import MensajeController
+        resultado = MensajeController.obtener_notificacion_con_detalles(id_notificacion, id_estudiante)
+        
+        if resultado:
+            return jsonify({
+                "success": True,
+                "notificacion": resultado['notificacion'],
+                "mensajes": resultado['mensajes']
+            })
+        else:
+            return jsonify({"success": False, "message": "Notificación no encontrada"}), 404
+    except Exception as e:
+        app.logger.error(f"Error al obtener notificación: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# API: Enviar respuesta a notificación
+@app.route('/api/notificacion/<int:id_notificacion>/responder', methods=['POST'])
+def api_responder_notificacion(id_notificacion):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    
+    id_estudiante = session['usuario']['id']
+    data = request.get_json()
+    
+    try:
+        if not data or 'contenido' not in data or 'id_profesor' not in data or 'id_materia' not in data:
+            return jsonify({"success": False, "message": "Datos incompletos"}), 400
+        
+        from Controllers.mensaje_controller import MensajeController
+        resultado = MensajeController.enviar_respuesta(
+            id_notificacion,
+            id_estudiante,
+            data['id_profesor'],
+            data['id_materia'],
+            data['contenido']
+        )
+        
+        return jsonify(resultado)
+    except Exception as e:
+        app.logger.error(f"Error al responder notificación: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# API: Obtener materias del estudiante
+@app.route('/api/estudiante/materias')
+def api_materias_estudiante():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    
+    id_estudiante = session['usuario']['id']
+    try:
+        from Controllers.estudiante_controller import EstudianteController
+        materias = EstudianteController.obtener_materias_asignadas(id_estudiante)
+        
+        return jsonify({
+            "success": True,
+            "materias": materias
+        })
+    except Exception as e:
+        app.logger.error(f"Error al obtener materias: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# API: Enviar mensaje inicial a profesor
+@app.route('/api/mensaje/enviar', methods=['POST'])
+def api_enviar_mensaje():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    
+    id_estudiante = session['usuario']['id']
+    data = request.get_json()
+    
+    try:
+        if not data or 'id_profesor' not in data or 'id_materia' not in data or \
+           'titulo' not in data or 'contenido' not in data:
+            return jsonify({"success": False, "message": "Datos incompletos"}), 400
+        
+        from Controllers.mensaje_controller import MensajeController
+        resultado = MensajeController.enviar_mensaje_inicial(
+            id_estudiante,
+            data['id_profesor'],
+            data['id_materia'],
+            data['titulo'],
+            data['contenido']
+        )
+        
+        return jsonify(resultado)
+    except Exception as e:
+        app.logger.error(f"Error al enviar mensaje: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 # Ruta: Mis Tareas (nueva)
@@ -1228,6 +1788,104 @@ def ver_descripcion():
             cursor.close()
             conexion.close()
     return render_template('padre/ver_descripcion.html', notas=notas)
+
+# --------------------------
+# APIs de Eventos (Calendario)
+# --------------------------
+
+@app.route('/api/eventos/crear', methods=['POST'])
+def crear_evento():
+    """Crear un nuevo evento en el calendario del estudiante"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        datos = request.get_json()
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.crear_evento(id_estudiante, datos)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/eventos/obtener', methods=['GET'])
+def obtener_eventos():
+    """Obtener todos los eventos del estudiante"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.obtener_eventos(id_estudiante)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/eventos/obtener/<int:evento_id>', methods=['GET'])
+def obtener_evento(evento_id):
+    """Obtener un evento específico"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.obtener_evento(evento_id, id_estudiante)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/eventos/actualizar/<int:evento_id>', methods=['PUT'])
+def actualizar_evento(evento_id):
+    """Actualizar un evento existente"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        datos = request.get_json()
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.actualizar_evento(evento_id, id_estudiante, datos)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/eventos/eliminar/<int:evento_id>', methods=['DELETE'])
+def eliminar_evento(evento_id):
+    """Eliminar un evento"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.eliminar_evento(evento_id, id_estudiante)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/eventos/fecha/<fecha>', methods=['GET'])
+def obtener_eventos_fecha(fecha):
+    """Obtener eventos de una fecha específica"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.obtener_eventos_por_fecha(id_estudiante, fecha)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/eventos/mes/<int:anio>/<int:mes>', methods=['GET'])
+def obtener_eventos_mes(anio, mes):
+    """Obtener eventos del mes"""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        id_estudiante = session['usuario']['id']
+        resultado = EventoController.obtener_eventos_mes(id_estudiante, anio, mes)
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # --------------------------
 # Main
 # --------------------------

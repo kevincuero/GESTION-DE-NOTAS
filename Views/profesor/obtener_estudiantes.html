@@ -5,153 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Obtener Estudiantes</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8fafc;
-            margin: 0;
-            padding: 2rem;
-            color: #212529;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            padding: 2rem;
-        }
-
-        h1 {
-            font-size: 2rem;
-            color: #4361ee;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            font-size: 1rem;
-            color: #212529;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-
-        select {
-            width: 100%;
-            padding: 0.8rem;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            background-color: #f8f9fa;
-            color: #212529;
-            transition: border-color 0.2s;
-        }
-
-        select:focus {
-            border-color: #4361ee;
-            outline: none;
-        }
-
-        button {
-            display: block;
-            width: 100%;
-            padding: 0.8rem;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #ffffff;
-            background-color: #4361ee;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-            margin-bottom: 1rem;
-        }
-
-        button:hover {
-            background-color: #3a56d4;
-            transform: translateY(-2px);
-        }
-
-        .btn-back {
-            background-color: #6c757d;
-        }
-
-        .btn-back:hover {
-            background-color: #5a6268;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1.5rem;
-        }
-
-        table th, table td {
-            text-align: left;
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-        }
-
-        table th {
-            background-color: #f8f9fa;
-            color: #4361ee;
-            font-weight: bold;
-        }
-
-        table tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            color: #4361ee;
-            margin-top: 2rem;
-            text-align: center;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Obtener Estudiantes por Materia</h1>
-        <form method="POST" action="{{ url_for('obtener_estudiantes') }}">
-            <label for="id_materia">Selecciona una materia:</label>
-            <select name="id_materia" id="id_materia" required>
-                <option value="" disabled selected>-- Selecciona una materia --</option>
-                {% for materia in materias %}
-                <option value="{{ materia['id'] }}">{{ materia['nombre'] }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Buscar</button>
-        </form>
+    <div class="main-layout">
+        <!-- Sidebar Persistente -->
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
+            <nav>
+                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
+                    <i class="fas fa-users"></i> Obtener Estudiantes
+                </a>
+                <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-edit"></i> Asignar Nota
+                </a>
+                <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-sync-alt"></i> Cambiar Nota
+                </a>
+                <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> Notificar
+                </a>
+            </nav>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </aside>
 
-        {% if estudiantes %}
-        <h2>Estudiantes inscritos en la materia</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre del Estudiante</th>
-                    <th>Correo</th>
-                    <th>Materia</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for estudiante in estudiantes %}
-                <tr>
-                    <td>{{ estudiante['estudiante'] }}</td>
-                    <td>{{ estudiante['correo'] }}</td>
-                    <td>{{ estudiante['materia'] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+        <!-- Main Content -->
+        <main class="content">
+            <div class="container">
 
-        <!-- Botón de regresar -->
-        <a href="{{ url_for('profesor_dashboard') }}" class="btn-back" style="text-decoration: none;">
-            <button type="button" class="btn-back">Volver</button>
-        </a>
+                <h1>Obtener Estudiantes por Materia</h1>
+                
+                <form method="POST" action="{{ url_for('obtener_estudiantes') }}">
+                    <div class="form-group">
+                        <label for="id_materia">Selecciona una materia:</label>
+                        <select name="id_materia" id="id_materia" required>
+                            <option value="" disabled selected>-- Selecciona una materia --</option>
+                            {% for materia in materias %}
+                            <option value="{{ materia['id'] }}">{{ materia['nombre'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit">Buscar</button>
+                </form>
+
+                {% if estudiantes %}
+                <h2>Estudiantes inscritos en la materia</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre del Estudiante</th>
+                            <th>Correo</th>
+                            <th>Materia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for estudiante in estudiantes %}
+                        <tr>
+                            <td>{{ estudiante['estudiante'] }}</td>
+                            <td>{{ estudiante['correo'] }}</td>
+                            <td>{{ estudiante['materia'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <a href="{{ url_for('profesor_dashboard') }}" style="text-decoration: none;">
+                    <button type="button" class="btn-back">Volver al Dashboard</button>
+                </a>
+            </div>
+        </main>
     </div>
 </body>
 </html>

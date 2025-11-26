@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if indice %}Editar{% else %}Crear{% endif %} Índice de Aprendizaje</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="main-layout">
+        <!-- Sidebar Persistente -->
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
+            <nav>
+                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
+                    <i class="fas fa-users"></i> Obtener Estudiantes
+                </a>
+                <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-edit"></i> Asignar Nota
+                </a>
+                <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-sync-alt"></i> Cambiar Nota
+                </a>
+                <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> Notificar
+                </a>
+                <a href="{{ url_for('indices') }}" class="nav-link"><i class="fas fa-percent"></i> Índices</a>
+                <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+            </nav>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="container">
+                <h1>{% if indice %}Editar{% else %}Crear{% endif %} Índice de Aprendizaje</h1>
+
+                <form method="POST" action="{% if indice %}{{ url_for('editar_indice', id_indice=indice['id']) }}{% else %}{{ url_for('crear_indice') }}{% endif %}">
+                    <label for="nombre">Nombre del Índice:</label>
+                    <input type="text" name="nombre" id="nombre" required value="{{ indice['nombre'] if indice else '' }}" placeholder="Ej: Resolución de Problemas">
+
+                    <label for="descripcion">Descripción:</label>
+                    <textarea name="descripcion" id="descripcion" rows="3" placeholder="Describe qué aspecto del aprendizaje evalúa este índice...">{{ indice['descripcion'] if indice else '' }}</textarea>
+
+                    <label for="parcial">Parcial/Evaluación Asociada:</label>
+                    <select name="parcial" id="parcial" required>
+                        <option value="" disabled {% if not indice %}selected{% endif %}>-- Selecciona el parcial --</option>
+                        <option value="Parcial 1" {% if indice and indice['parcial'] == 'Parcial 1' %}selected{% endif %}>Parcial 1</option>
+                        <option value="Parcial 2" {% if indice and indice['parcial'] == 'Parcial 2' %}selected{% endif %}>Parcial 2</option>
+                        <option value="Parcial 3" {% if indice and indice['parcial'] == 'Parcial 3' %}selected{% endif %}>Parcial 3</option>
+                        <option value="Examen Final" {% if indice and indice['parcial'] == 'Examen Final' %}selected{% endif %}>Examen Final</option>
+                    </select>
+
+                    <label for="porcentaje">Porcentaje de Importancia (%):</label>
+                    <input type="number" name="porcentaje" id="porcentaje" min="0" max="100" step="0.1" required value="{{ indice['porcentaje'] if indice else '' }}" placeholder="Ej: 25">
+
+                    <button type="submit" style="margin-top: 1rem;">{% if indice %}Actualizar{% else %}Crear{% endif %} Índice</button>
+                </form>
+
+                <!-- Botón de regresar -->
+                <a href="{{ url_for('indices') }}" style="text-decoration: none; display: block;">
+                    <button type="button" class="btn-back">Volver</button>
+                </a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

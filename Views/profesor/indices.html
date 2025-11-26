@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Índices de Aprendizaje</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="main-layout">
+        <!-- Sidebar Persistente -->
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
+            <nav>
+                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
+                    <i class="fas fa-users"></i> Obtener Estudiantes
+                </a>
+                <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-edit"></i> Asignar Nota
+                </a>
+                <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-sync-alt"></i> Cambiar Nota
+                </a>
+                <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> Notificar
+                </a>
+                <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
+                <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+            </nav>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="container">
+                <h1>Índices de Aprendizaje</h1>
+
+                <!-- Formulario para seleccionar materia -->
+                <form method="POST" action="{{ url_for('indices') }}" id="formSeleccionMateria">
+                    <label for="id_materia">Selecciona una materia:</label>
+                    <select name="id_materia" id="id_materia" required>
+                        <option value="" disabled {% if not id_materia_actual %}selected{% endif %}>-- Selecciona una materia --</option>
+                        {% for materia in materias %}
+                        <option value="{{ materia.id }}" {% if id_materia_actual == materia.id %}selected{% endif %}>
+                            {{ materia.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Ver Índices</button>
+                </form>
+
+                <!-- Tabla de Índices -->
+                {% if indices %}
+                <h2 style="margin-top: 2rem; color: #4361ee; font-size: 1.3rem;">Índices Configurados</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Índice</th>
+                            <th>Descripción</th>
+                            <th>Parcial</th>
+                            <th>Porcentaje (%)</th>
+                            <th>Última Evaluación</th>
+                            <th>Promedio Dominio (%)</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for indice in indices %}
+                        <tr>
+                            <td><strong>{{ indice['nombre'] }}</strong></td>
+                            <td>{{ indice['descripcion'][:50] }}{% if indice['descripcion']|length > 50 %}...{% endif %}</td>
+                            <td>{{ indice['parcial'] }}</td>
+                            <td>{{ indice['porcentaje'] }}%</td>
+                            <td>
+                                {% if indice['ultima_evaluacion'] %}
+                                    {{ indice['ultima_evaluacion']['porcentaje_dominio'] }}% ({{ indice['ultima_evaluacion']['fecha_evaluacion'].strftime('%d/%m/%Y') }})
+                                {% else %}
+                                    <span style="color: #999;">Sin evaluar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if indice['promedio_dominio'] %}
+                                    <strong>{{ "%.1f" % indice['promedio_dominio'] }}%</strong>
+                                {% else %}
+                                    <span style="color: #999;">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <button type="button" class="btn-action btn-promediar" 
+                                            data-id="{{ indice['id'] }}" 
+                                            data-nombre="{{ indice['nombre'] }}" 
+                                            data-parcial="{{ indice['parcial'] }}" 
+                                            data-porcentaje="{{ indice['porcentaje'] }}" 
+                                            data-promedio="{{ indice['promedio_dominio'] }}"
+                                            style="background: #0b8aeb; color: white; padding: 0.5rem 1rem; border-radius: 8px; border: none; font-size: 0.9rem; text-align: center; cursor: pointer;">
+                                        <i class="fas fa-calculator"></i> Promediar
+                                    </button>
+
+                                    <a href="{{ url_for('evaluar_indice', id_indice=indice['id']) }}" class="btn-action" style="background: #4361ee; color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem; text-align: center; display: block;">
+                                        <i class="fas fa-edit"></i> Evaluar
+                                    </a>
+                                    <a href="{{ url_for('editar_indice', id_indice=indice['id']) }}" class="btn-action" style="background: #6c757d; color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem; text-align: center; display: block;">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    <a href="{{ url_for('eliminar_indice', id_indice=indice['id']) }}" class="btn-action" onclick="return confirm('¿Estás seguro de que deseas eliminar este índice?');" style="background: #f72585; color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem; text-align: center; display: block;">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Botón para crear nuevo índice -->
+                {% if id_materia_actual and indices|length < 4 %}
+                <a href="{{ url_for('crear_indice') }}" style="display: inline-block; margin-top: 1.5rem;">
+                    <button type="button" style="background: #4361ee; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem;">
+                        <i class="fas fa-plus"></i> Crear Nuevo Índice
+                    </button>
+                </a>
+                {% elif id_materia_actual and indices|length >= 4 %}
+                <p style="margin-top: 1rem; color: #f72585; font-weight: bold;">
+                    <i class="fas fa-exclamation-circle"></i> Se ha alcanzado el máximo de 4 índices para esta materia.
+                </p>
+                {% endif %}
+                {% else %}
+                {% if id_materia_actual %}
+                <p style="margin-top: 2rem; text-align: center; color: #999;">
+                    <i class="fas fa-inbox"></i> No hay índices configurados para esta materia aún.
+                </p>
+                <a href="{{ url_for('crear_indice') }}" style="display: inline-block; margin-top: 1.5rem;">
+                    <button type="button" style="background: #4361ee; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem;">
+                        <i class="fas fa-plus"></i> Crear Primer Índice
+                    </button>
+                </a>
+                {% endif %}
+                {% endif %}
+
+                <!-- Botón de regresar -->
+                <a href="{{ url_for('profesor_dashboard') }}" style="text-decoration: none; display: block; margin-top: 1.5rem;">
+                    <button type="button" class="btn-back">Volver</button>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Ventana para mostrar tabla de promedios -->
+    <div id="promediarModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="modal-close" id="modalClose">&times;</span>
+            <h3>Promediar Índice</h3>
+            <div class="modal-body">
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Índice</th>
+                            <th>Parcial</th>
+                            <th>Porcentaje Índice (%)</th>
+                            <th>Promedio Dominio (%)</th>
+                            <th>Resultado (puntos)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody">
+                        <!-- Se llenará dinámicamente -->
+                    </tbody>
+                </table>
+                <p style="margin-top:0.8rem; color:#666; font-size:0.95rem;">Fórmula aplicada: Resultado = (Promedio_Grupo / 100) × (Peso_Índice / 100). Resultado expresado en puntos (ej. 24 significa 24 puntos).</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Manejo del modal y cálculo de promedios
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('promediarModal');
+            const tableBody = document.getElementById('modalTableBody');
+            const closeBtn = document.getElementById('modalClose');
+
+            function abrirModalConDatos(datos) {
+                tableBody.innerHTML = '';
+                const tr = document.createElement('tr');
+
+                const nombreTd = document.createElement('td');
+                nombreTd.textContent = datos.nombre || '';
+
+                const parcialTd = document.createElement('td');
+                parcialTd.textContent = datos.parcial || '';
+
+                const porcentajeTd = document.createElement('td');
+                porcentajeTd.textContent = (isNaN(datos.porcentaje) ? '0' : parseFloat(datos.porcentaje).toFixed(2)) + '%';
+
+                const promedioTd = document.createElement('td');
+                const promedioVal = isNaN(datos.promedio) ? 0 : parseFloat(datos.promedio);
+                promedioTd.textContent = promedioVal.toFixed(2) + '%';
+
+                // Aplicar la fórmula: Resultado (puntos) = (Promedio_Grupo * Porcentaje_Indice) / 100
+                const porcentajeVal = isNaN(datos.porcentaje) ? 0 : parseFloat(datos.porcentaje);
+                const resultadoPuntos = (promedioVal * porcentajeVal) / 100;
+                const resultadoTd = document.createElement('td');
+                resultadoTd.textContent = resultadoPuntos.toFixed(2);
+
+                tr.appendChild(nombreTd);
+                tr.appendChild(parcialTd);
+                tr.appendChild(porcentajeTd);
+                tr.appendChild(promedioTd);
+                tr.appendChild(resultadoTd);
+
+                tableBody.appendChild(tr);
+                modal.style.display = 'block';
+            }
+
+            // Cerrar modal
+            closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+            window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+            // Vincular botones "Promediar"
+            document.querySelectorAll('.btn-promediar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const datos = {
+                        id: this.dataset.id,
+                        nombre: this.dataset.nombre,
+                        parcial: this.dataset.parcial,
+                        porcentaje: this.dataset.porcentaje,
+                        promedio: this.dataset.promedio || 0
+                    };
+                    abrirModalConDatos(datos);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

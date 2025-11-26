@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notificaciones</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -102,6 +103,7 @@
             display: flex;
             gap: 20px;
             align-items: flex-start;
+            cursor: pointer;
         }
 
         .notification-item:hover {
@@ -114,16 +116,8 @@
             border-left-color: #4facfe;
         }
 
-        .notification-item.info {
-            border-left-color: #4facfe;
-        }
-
-        .notification-item.success {
-            border-left-color: #50c878;
-        }
-
-        .notification-item.warning {
-            border-left-color: #ffa500;
+        .notification-item.read {
+            opacity: 0.8;
         }
 
         .notification-icon {
@@ -135,26 +129,8 @@
             justify-content: center;
             flex-shrink: 0;
             font-size: 20px;
-        }
-
-        .notification-item.unread .notification-icon {
-            background: #ffe0e0;
-            color: #ff6b6b;
-        }
-
-        .notification-item.info .notification-icon {
             background: #e0f0ff;
             color: #4facfe;
-        }
-
-        .notification-item.success .notification-icon {
-            background: #e0f8f0;
-            color: #50c878;
-        }
-
-        .notification-item.warning .notification-icon {
-            background: #fff5e0;
-            color: #ffa500;
         }
 
         .notification-content {
@@ -173,6 +149,11 @@
             line-height: 1.5;
             font-size: 14px;
             margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .notification-meta {
@@ -182,42 +163,10 @@
             color: #999;
         }
 
-        .notification-time {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .notification-sender {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
         .notification-actions {
             display: flex;
             gap: 10px;
             align-items: center;
-        }
-
-        .mark-read-btn {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ddd;
-            background: transparent;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .mark-read-btn:hover {
-            border-color: #4facfe;
-            background: #4facfe;
-        }
-
-        .notification-item.read .mark-read-btn {
-            background: #ddd;
-            border-color: #ddd;
         }
 
         .delete-btn {
@@ -230,7 +179,23 @@
         }
 
         .delete-btn:hover {
+            color: #ff6b6b;
+        }
+
+        .reply-btn {
+            background: transparent;
+            border: none;
             color: #4facfe;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .reply-btn:hover {
+            color: #0081cf;
         }
 
         .filter-tabs {
@@ -256,10 +221,6 @@
             border-bottom-color: #4facfe;
         }
 
-        .filter-tab:hover {
-            color: #4facfe;
-        }
-
         .no-notifications {
             text-align: center;
             padding: 60px 20px;
@@ -273,6 +234,242 @@
             opacity: 0.5;
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 25px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-close:hover {
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .notification-detail {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .notification-detail h3 {
+            color: #2d3142;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .notification-detail p {
+            color: #666;
+            line-height: 1.6;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .notification-detail-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .messages-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message.profesor {
+            background: #e0f0ff;
+            border-left: 3px solid #4facfe;
+            margin-right: 40px;
+        }
+
+        .message.estudiante {
+            background: #e8f5e9;
+            border-left: 3px solid #50c878;
+            margin-left: 40px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #2d3142;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .reply-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3142;
+            margin-bottom: 5px;
+        }
+
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #2d3142;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 200px;
@@ -282,12 +479,17 @@
                 padding: 20px;
             }
 
-            .notification-item {
-                flex-direction: column;
+            .modal-content {
+                width: 95%;
+                margin: 20% auto;
             }
 
-            .notification-icon {
-                align-self: flex-start;
+            .message.profesor {
+                margin-right: 10px;
+            }
+
+            .message.estudiante {
+                margin-left: 10px;
             }
         }
     </style>
@@ -299,38 +501,62 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <h1 class="page-header">Notificaciones</h1>
+        <h1 class="page-header">
+            <i class="fas fa-bell"></i> Notificaciones y Mensajes
+        </h1>
 
         {% if notificaciones %}
         <!-- Filter Tabs -->
         <div class="filter-tabs">
-            <button class="filter-tab active">Todas ({{ notificaciones|length }})</button>
-            <button class="filter-tab">No leídas</button>
-            <button class="filter-tab">Académicas</button>
-            <button class="filter-tab">Administrativas</button>
+            <button class="filter-tab active" data-filter="todas">
+                Todas ({{ notificaciones|length }})
+            </button>
+            <button class="filter-tab" data-filter="no_leidas">
+                No leídas
+            </button>
         </div>
 
         <!-- Notifications List -->
-        <div class="notifications-list">
+        <div class="notifications-list" id="notificacionesList">
             {% for notif in notificaciones %}
-            <div class="notification-item {% if notif.leida == 0 %}unread{% else %}read{% endif %} {% if notif.tipo == 'academica' %}info{% elif notif.tipo == 'exito' %}success{% elif notif.tipo == 'advertencia' %}warning{% endif %}">
-                <button class="mark-read-btn" title="Marcar como leído"></button>
+            <div class="notification-item {% if notif.leida == 0 %}unread{% else %}read{% endif %}" 
+                 data-id="{{ notif.id }}" 
+                 data-profesor-id="{{ notif.id_profesor }}"
+                 data-leida="{{ notif.leida }}">
+                
+                <div class="notification-icon">
+                    {% if notif.leida == 0 %}
+                    <i class="fas fa-envelope"></i>
+                    {% else %}
+                    <i class="fas fa-envelope-open"></i>
+                    {% endif %}
+                </div>
                 
                 <div class="notification-content">
-                    <div class="notification-title">{{ notif.titulo }}</div>
-                    <div class="notification-message">{{ notif.descripcion }}</div>
+                    <div class="notification-title">
+                        {{ notif.titulo }}
+                        {% if notif.leida == 0 %}
+                        <span class="badge">NUEVO</span>
+                        {% endif %}
+                    </div>
+                    <div class="notification-message">{{ notif.mensaje }}</div>
                     <div class="notification-meta">
-                        <span class="notification-sender">
-                            👨‍🏫 {{ notif.remitente if notif.remitente else 'Sistema' }}
+                        <span>
+                            <i class="fas fa-user"></i> {{ notif.profesor_nombre }}
                         </span>
-                        <span class="notification-time">
-                            🕐 {{ notif.fecha_creacion }}
+                        <span>
+                            <i class="fas fa-clock"></i> {{ notif.fecha }}
                         </span>
                     </div>
                 </div>
                 
                 <div class="notification-actions">
-                    <button class="delete-btn" title="Eliminar">✕</button>
+                    <button class="reply-btn" title="Responder" data-action="reply">
+                        <i class="fas fa-reply"></i>
+                    </button>
+                    <button class="delete-btn" title="Eliminar" data-action="delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
             {% endfor %}
@@ -342,30 +568,298 @@
                 <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"/>
             </svg>
             <h3>No tienes notificaciones</h3>
-            <p>Las notificaciones de los profesores y administración aparecerán aquí.</p>
+            <p>Las notificaciones de los profesores aparecerán aquí.</p>
         </div>
         {% endif %}
     </div>
 
+    <!-- Modal para ver detalles y responder -->
+    <div id="notificacionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Notificación</h2>
+                <button class="modal-close" id="modalCloseBtn">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="notification-detail">
+                    <h3 id="detailTitle">Título</h3>
+                    <p id="detailMessage">Mensaje</p>
+                    <div class="notification-detail-meta">
+                        <span>
+                            <i class="fas fa-user"></i> <strong id="detailProfesor"></strong>
+                        </span>
+                        <span>
+                            <i class="fas fa-clock"></i> <strong id="detailFecha"></strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Los mensajes se cargarán aquí -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <form class="reply-form" id="replyForm">
+                    <div class="form-group">
+                        <label for="replyMateria">Materia:</label>
+                        <select id="replyMateria" name="id_materia" required>
+                            <option value="">Selecciona una materia...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="replyContent">Tu respuesta:</label>
+                        <textarea id="replyContent" name="contenido" placeholder="Escribe tu respuesta aquí..." required></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" class="btn btn-secondary" id="modalCancelBtn">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Enviar Respuesta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
+        let modalNotificacionId = null;
+        let modalProfesorId = null;
 
-        document.querySelectorAll('.mark-read-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                this.parentElement.classList.toggle('read');
+        function filtrar_notificaciones(filtro) {
+            const items = document.querySelectorAll('.notification-item');
+            
+            items.forEach(item => {
+                if (filtro === 'todas') {
+                    item.style.display = 'flex';
+                } else if (filtro === 'no_leidas') {
+                    item.style.display = item.dataset.leida === '0' ? 'flex' : 'none';
+                }
             });
-        });
 
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                this.closest('.notification-item').style.opacity = '0';
-                setTimeout(() => this.closest('.notification-item').remove(), 300);
+            // Actualizar botones activos
+            document.querySelectorAll('.filter-tab').forEach(btn => {
+                btn.classList.remove('active');
             });
+            event.target.classList.add('active');
+        }
+
+        function abrirModal(id_notificacion, id_profesor) {
+            modalNotificacionId = id_notificacion;
+            modalProfesorId = id_profesor;
+
+            // Cargar detalles de la notificación
+            fetch(`/api/notificacion/${id_notificacion}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const notif = data.notificacion;
+                        const mensajes = data.mensajes;
+
+                        // Llenar detalles
+                        document.getElementById('modalTitle').textContent = notif.titulo;
+                        document.getElementById('detailTitle').textContent = notif.titulo;
+                        document.getElementById('detailMessage').textContent = notif.mensaje;
+                        document.getElementById('detailProfesor').textContent = notif.profesor_nombre;
+                        document.getElementById('detailFecha').textContent = notif.fecha;
+
+                        // Llenar mensajes
+                        const container = document.getElementById('messagesContainer');
+                        container.innerHTML = '';
+
+                        if (mensajes && mensajes.length > 0) {
+                            const titulo = document.createElement('h4');
+                            titulo.style.marginBottom = '15px';
+                            titulo.style.color = '#2d3142';
+                            titulo.innerHTML = '<i class="fas fa-comments"></i> Conversación';
+                            container.appendChild(titulo);
+
+                            mensajes.forEach(msg => {
+                                const msgDiv = document.createElement('div');
+                                msgDiv.className = `message ${msg.remitente_tipo}`;
+                                msgDiv.innerHTML = `
+                                    <div class="message-sender">${msg.remitente_nombre}</div>
+                                    <div>${msg.contenido}</div>
+                                    <div class="message-time">${msg.fecha}</div>
+                                `;
+                                container.appendChild(msgDiv);
+                            });
+                        }
+
+                        // Cargar materias del estudiante
+                        cargar_materias_estudiante();
+
+                        // Marcar como leída
+                        marcar_como_leida(id_notificacion);
+
+                        // Mostrar modal
+                        document.getElementById('notificacionModal').style.display = 'block';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function cerrarModal() {
+            document.getElementById('notificacionModal').style.display = 'none';
+            document.getElementById('replyForm').reset();
+            modalNotificacionId = null;
+            modalProfesorId = null;
+        }
+
+        function cargar_materias_estudiante() {
+            fetch('/api/estudiante/materias')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const select = document.getElementById('replyMateria');
+                        select.innerHTML = '<option value="">Selecciona una materia...</option>';
+                        
+                        data.materias.forEach(materia => {
+                            const option = document.createElement('option');
+                            option.value = materia.id;
+                            option.textContent = materia.nombre;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function enviar_respuesta(event) {
+            event.preventDefault();
+
+            const contenido = document.getElementById('replyContent').value;
+            const id_materia = document.getElementById('replyMateria').value;
+
+            if (!contenido || !id_materia) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            fetch(`/api/notificacion/${modalNotificacionId}/responder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contenido: contenido,
+                    id_profesor: modalProfesorId,
+                    id_materia: parseInt(id_materia)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Respuesta enviada correctamente');
+                    cerrarModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function marcar_como_leida(id_notificacion) {
+            fetch(`/api/notificacion/marcar_leida/${id_notificacion}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function eliminar_notificacion(id_notificacion) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta notificación?')) {
+                fetch(`/api/notificacion/eliminar/${id_notificacion}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const item = document.querySelector(`[data-id="${id_notificacion}"]`);
+                        item.style.opacity = '0';
+                        setTimeout(() => item.remove(), 300);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        // Cerrar modal al hacer click fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('notificacionModal');
+            if (event.target == modal) {
+                cerrarModal();
+            }
+        }
+
+        // Event listeners initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter tab handlers
+            document.querySelectorAll('.filter-tab').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filtro = this.dataset.filter;
+                    filtrar_notificaciones(filtro);
+                });
+            });
+
+            // Notification items click handler
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // No abrir modal si hacemos click en botones de acción
+                    if (!e.target.closest('.notification-actions')) {
+                        const id = this.dataset.id;
+                        const idProfesor = this.dataset.profesorId;
+                        abrirModal(id, idProfesor);
+                    }
+                });
+            });
+
+            // Reply button handlers
+            document.querySelectorAll('[data-action="reply"]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const item = this.closest('.notification-item');
+                    const id = item.dataset.id;
+                    const idProfesor = item.dataset.profesorId;
+                    abrirModal(id, idProfesor);
+                });
+            });
+
+            // Delete button handlers
+            document.querySelectorAll('[data-action="delete"]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const item = this.closest('.notification-item');
+                    const id = item.dataset.id;
+                    eliminar_notificacion(id);
+                });
+            });
+
+            // Modal close button
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+            if (modalCloseBtn) {
+                modalCloseBtn.addEventListener('click', cerrarModal);
+            }
+
+            // Modal cancel button
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+            if (modalCancelBtn) {
+                modalCancelBtn.addEventListener('click', cerrarModal);
+            }
+
+            // Form submit handler
+            const replyForm = document.getElementById('replyForm');
+            if (replyForm) {
+                replyForm.addEventListener('submit', enviar_respuesta);
+            }
         });
     </script>
 </body>

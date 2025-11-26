@@ -1,0 +1,74 @@
+# ⚡ Instalación Rápida - Sistema de Eventos
+
+## 3 Pasos para Activar
+
+### Paso 1: Crear la Tabla en Base de Datos
+
+Abre tu cliente MySQL (phpMyAdmin, MySQL Workbench, o terminal) y ejecuta:
+
+```sql
+USE GestionDeEstudiantes;
+
+CREATE TABLE IF NOT EXISTS eventos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_estudiante INT NOT NULL,
+    titulo VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    color VARCHAR(7) DEFAULT '#4facfe',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id) ON DELETE CASCADE,
+    INDEX idx_estudiante (id_estudiante),
+    INDEX idx_fecha (fecha),
+    INDEX idx_estudiante_fecha (id_estudiante, fecha)
+);
+```
+
+### Paso 2: Reiniciar Flask
+
+En tu terminal/PowerShell donde corres la aplicación:
+
+```bash
+# Detén el servidor (Ctrl + C)
+# Reinicia
+python main.py
+```
+
+### Paso 3: Prueba
+
+1. Abre tu navegador
+2. Loguéate como estudiante
+3. Ve a **"Mi Horario"**
+4. ¡Verás el botón **"+ Crear Evento"**!
+
+## 🚀 ¡Listo!
+
+Ya puedes:
+- ✅ Crear eventos personalizados
+- ✅ Editar eventos
+- ✅ Eliminar eventos
+- ✅ Ver todos tus eventos en el calendario
+
+## 📚 Documentación Completa
+
+Para más información, lee:
+- `EVENTOS_README.md` - Guía detallada
+- `CHANGELOG_EVENTOS.md` - Resumen de cambios
+
+## ❓ ¿Problemas?
+
+### Los eventos no aparecen
+→ Asegúrate de haber ejecutado el SQL del Paso 1
+
+### Error "Table doesn't exist"
+→ Verifica que hayas creado la tabla en la base de datos correcta
+
+### Error 401 "No autorizado"
+→ Verifica estar logeado como estudiante
+
+---
+
+**¡Disfruta tu nuevo sistema de eventos! 🎉**

@@ -5,99 +5,271 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enviar Notificación</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8fafc;
-            margin: 0;
-            padding: 2rem;
-            color: #212529;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            padding: 2rem;
-        }
-        h1 {
-            font-size: 2rem;
-            color: #4361ee;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        label {
-            font-size: 1rem;
-            color: #212529;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 0.8rem;
-            font-size: 1rem;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            background-color: #f8f9fa;
-            color: #212529;
-            transition: border-color 0.2s;
-        }
-        input:focus, textarea:focus {
-            border-color: #4361ee;
-            outline: none;
-        }
-        button {
-            display: block;
-            width: 100%;
-            padding: 0.8rem;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #ffffff;
-            background-color: #4361ee;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-            margin-bottom: 1rem;
-        }
-        button:hover {
-            background-color: #3a56d4;
-            transform: translateY(-2px);
-        }
-        .btn-back {
-            background-color: #6c757d;
-        }
-        .btn-back:hover {
-            background-color: #5a6268;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Enviar Notificación</h1>
-        <form method="POST" action="{{ url_for('enviar_notificacion') }}">
-            <label for="nombre_estudiante">Nombre del Estudiante:</label>
-            <input type="text" name="nombre_estudiante" id="nombre_estudiante" required>
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
+            <nav>
+                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="{{ url_for('obtener_estudiantes') }}" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
+                    <i class="fas fa-users"></i> Obtener Estudiantes
+                </a>
+                <a href="{{ url_for('asignar_nota') }}" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-edit"></i> Asignar Nota
+                </a>
+                <a href="{{ url_for('cambiar_nota') }}" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-sync-alt"></i> Cambiar Nota
+                </a>
+                <a href="{{ url_for('enviar_notificacion') }}" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
+                    <i class="fas fa-bell"></i> Notificar
+                </a>
+                <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}">
+                    <i class="fas fa-percent"></i> Índices
+                </a>
+                <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}">
+                    <i class="fas fa-file-alt"></i> Hoja de vida
+                </a>
+            </nav>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </aside>
 
-            <label for="nombre_padre">Nombre del Padre:</label>
-            <input type="text" name="nombre_padre" id="nombre_padre" required>
+        <!-- Main Content -->
+        <main class="content">
+            <div class="container">
+                <h1><i class="fas fa-bell"></i> Enviar Notificación</h1>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
-            <label for="correo_padre">Correo del Padre:</label>
-            <input type="email" name="correo_padre" id="correo_padre" required>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="cambiar_tab('individual')">
+                        <i class="fas fa-user-graduate"></i> Individual
+                    </button>
+                    <button class="tab-btn" onclick="cambiar_tab('grupo')">
+                        <i class="fas fa-users"></i> A Toda la Clase
+                    </button>
+                </div>
 
-            <label for="comentario">Comentario:</label>
-            <textarea name="comentario" id="comentario" rows="4" placeholder="Escribe el comentario..." required></textarea>
+                <!-- TAB 1: Notificación Individual -->
+                <div id="individual" class="tab-content active">
+                    <form method="POST" action="{{ url_for('enviar_notificacion') }}" class="form-notificacion">
+                        <input type="hidden" name="tipo_envio" value="individual">
+                        
+                        <div class="form-group">
+                            <label for="id_materia"><i class="fas fa-book"></i> Selecciona Materia:</label>
+                            <select name="id_materia" id="id_materia" required onchange="cargar_estudiantes()">
+                                <option value="">-- Selecciona una materia --</option>
+                                {% for materia in materias %}
+                                    <option value="{{ materia.id }}">{{ materia.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-            <button type="submit">Enviar Notificación</button>
-        </form>
+                        <div class="form-group">
+                            <label for="id_estudiante"><i class="fas fa-user-graduate"></i> Selecciona Estudiante:</label>
+                            <select name="id_estudiante" id="id_estudiante" required>
+                                <option value="">-- Selecciona un estudiante --</option>
+                            </select>
+                        </div>
 
-        <!-- Botón de regresar -->
-        <a href="{{ url_for('profesor_dashboard') }}" style="text-decoration: none;">
-            <button type="button" class="btn-back">Volver</button>
-        </a>
+                        <div class="form-group">
+                            <label for="titulo"><i class="fas fa-heading"></i> Asunto/Título:</label>
+                            <input type="text" name="titulo" id="titulo" placeholder="Ej: Recordatorio de tarea" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mensaje"><i class="fas fa-comment"></i> Mensaje:</label>
+                            <textarea name="mensaje" id="mensaje" rows="6" placeholder="Escribe el mensaje de la notificación..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Enviar Notificación
+                        </button>
+                    </form>
+                </div>
+
+                <!-- TAB 2: Notificación a Toda la Clase -->
+                <div id="grupo" class="tab-content">
+                    <form method="POST" action="{{ url_for('enviar_notificacion_grupo') }}" class="form-notificacion">
+                        <input type="hidden" name="tipo_envio" value="grupo">
+                        
+                        <div class="form-group">
+                            <label for="id_materia_grupo"><i class="fas fa-book"></i> Selecciona Materia:</label>
+                            <select name="id_materia" id="id_materia_grupo" required>
+                                <option value="">-- Selecciona una materia --</option>
+                                {% for materia in materias %}
+                                    <option value="{{ materia.id }}">{{ materia.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-info-circle"></i> Información:</label>
+                            <p class="info-text">Esta notificación será enviada a todos los estudiantes inscritos en la materia seleccionada.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="titulo_grupo"><i class="fas fa-heading"></i> Asunto/Título:</label>
+                            <input type="text" name="titulo" id="titulo_grupo" placeholder="Ej: Importante: Nueva unidad" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mensaje_grupo"><i class="fas fa-comment"></i> Mensaje:</label>
+                            <textarea name="mensaje" id="mensaje_grupo" rows="6" placeholder="Escribe el mensaje para toda la clase..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Enviar a Toda la Clase
+                        </button>
+                    </form>
+                </div>
+
+                <a href="{{ url_for('profesor_dashboard') }}" class="btn btn-back" style="margin-top: 20px;">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </main>
     </div>
+
+    <style>
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+
+        .tab-btn:hover {
+            color: #0056b3;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert .close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .info-text {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-left: 4px solid #2196F3;
+            color: #0c5aa0;
+            border-radius: 4px;
+        }
+    </style>
+
+    <script>
+        function cambiar_tab(tab_name) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Mostrar el tab seleccionado
+            document.getElementById(tab_name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function cargar_estudiantes() {
+            const id_materia = document.getElementById('id_materia').value;
+            const select_estudiantes = document.getElementById('id_estudiante');
+            
+            if (!id_materia) {
+                select_estudiantes.innerHTML = '<option value="">-- Selecciona un estudiante --</option>';
+                return;
+            }
+
+            // AJAX para obtener estudiantes inscritos en la materia
+            fetch(`/api/estudiantes_por_materia/${id_materia}`)
+                .then(response => response.json())
+                .then(data => {
+                    select_estudiantes.innerHTML = '<option value="">-- Selecciona un estudiante --</option>';
+                    data.forEach(est => {
+                        const option = document.createElement('option');
+                        option.value = est.id;
+                        option.textContent = est.nombre;
+                        select_estudiantes.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Cerrar alertas
+        document.querySelectorAll('.close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.parentElement.style.display = 'none';
+            });
+        });
+    </script>
 </body>
 </html>

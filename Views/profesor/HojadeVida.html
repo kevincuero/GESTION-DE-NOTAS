@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Vida</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+</head>
+<body>
+    <div class="main-layout">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
+            <nav>
+                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="{{ url_for('obtener_estudiantes') }}" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Obtener Estudiantes</a>
+                <a href="{{ url_for('asignar_nota') }}" class="{% if 'asignar_nota' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Asignar Nota</a>
+                <a href="{{ url_for('cambiar_nota') }}" class="{% if 'cambiar_nota' in request.path %}active{% endif %}"><i class="fas fa-sync-alt"></i> Cambiar Nota</a>
+                <a href="{{ url_for('enviar_notificacion') }}" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Notificar</a>
+                <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
+                <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+            </nav>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </aside>
+
+            <script>
+                // Mostrar nombre y tamaño del archivo seleccionado antes de subir
+                function humanFileSize(size) {
+                    const i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
+                    return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'KB', 'MB', 'GB'][i];
+                }
+
+                document.addEventListener('DOMContentLoaded', function(){
+                    const input = document.getElementById('hoja');
+                    const selected = document.getElementById('selectedFile');
+                    if (input && selected) {
+                        input.addEventListener('change', function(e){
+                            const f = this.files[0];
+                            if (f) {
+                                selected.textContent = `${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+                            } else {
+                                selected.textContent = 'Ningún archivo seleccionado';
+                            }
+                        });
+                    }
+
+                    const inputUpd = document.getElementById('hoja_upd');
+                    const selectedUpd = document.getElementById('selectedFileUpd');
+                    if (inputUpd && selectedUpd) {
+                        inputUpd.addEventListener('change', function(e){
+                            const f = this.files[0];
+                            if (f) {
+                                selectedUpd.textContent = `${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+                            } else {
+                                selectedUpd.textContent = 'Ningún archivo seleccionado';
+                            }
+                        });
+                    }
+                });
+            </script>
+
+        <main class="content">
+            <div class="container">
+                <h1>Hoja de Vida</h1>
+
+                <div class="hoja-vida-actions">
+                    <div class="card">
+                        <form class="form-upload" id="formSubir" action="{{ url_for('subir_hoja') }}" method="POST" enctype="multipart/form-data">
+                            <input type="file" name="hoja" id="hoja" accept="application/pdf" class="file-input" />
+                            <label for="hoja" class="file-button btn btn-primary">
+                                <i class="fas fa-upload icon"></i> Seleccionar PDF
+                            </label>
+                            <div class="selected-file" id="selectedFile">Ningún archivo seleccionado</div>
+                            <button type="submit" class="btn btn-primary btn-full"><i class="fas fa-cloud-upload-alt icon"></i> Subir Hoja de Vida</button>
+                        </form>
+
+                        <div class="view-area">
+                            {% if hoja %}
+                                <a href="{{ url_for('ver_hoja', id_profesor=usuario['id']) }}" target="_blank" class="btn btn-primary"><i class="fas fa-eye icon"></i> Visualizar Hoja de Vida</a>
+                            {% else %}
+                                <button class="btn btn-disabled" disabled><i class="fas fa-eye icon"></i> Visualizar Hoja de Vida</button>
+                            {% endif %}
+                        </div>
+
+                        <form class="form-upload" id="formActualizar" action="{{ url_for('actualizar_hoja') }}" method="POST" enctype="multipart/form-data">
+                            <input type="file" name="hoja" id="hoja_upd" accept="application/pdf" class="file-input" />
+                            <label for="hoja_upd" class="file-button btn btn-primary">
+                                <i class="fas fa-file-import icon"></i> Seleccionar PDF (Actualizar)
+                            </label>
+                            <div class="selected-file" id="selectedFileUpd">Ningún archivo seleccionado</div>
+                            <button type="submit" class="btn btn-primary btn-full"><i class="fas fa-sync-alt icon"></i> Actualizar Hoja de Vida</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="current-file">
+                    {% if hoja %}
+                        <p>Archivo actual: <strong>{{ hoja }}</strong></p>
+                    {% else %}
+                        <p class="text-muted">Aún no has subido una hoja de vida.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </main>
+    </div>
+</body>
+</html>

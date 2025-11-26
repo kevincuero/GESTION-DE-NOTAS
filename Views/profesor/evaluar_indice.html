@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluar Índice de Aprendizaje</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="main-layout">
+        <!-- Sidebar Persistente -->
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
+            <nav>
+                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
+                    <i class="fas fa-users"></i> Obtener Estudiantes
+                </a>
+                <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-edit"></i> Asignar Nota
+                </a>
+                <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
+                    <i class="fas fa-sync-alt"></i> Cambiar Nota
+                </a>
+                <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> Notificar
+                </a>
+                <a href="{{ url_for('indices') }}" class="nav-link"><i class="fas fa-percent"></i> Índices</a>
+                <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+            </nav>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="container">
+                <h1>Evaluar Índice de Aprendizaje</h1>
+
+                <!-- Información del Índice -->
+                <div style="background: #f0f7ff; padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; border-left: 4px solid #4361ee;">
+                    <h2 style="color: #4361ee; margin-top: 0; margin-bottom: 0.5rem;">{{ indice['nombre'] }}</h2>
+                    <p style="margin: 0.3rem 0; color: #555;"><strong>Descripción:</strong> {{ indice['descripcion'] }}</p>
+                    <p style="margin: 0.3rem 0; color: #555;"><strong>Parcial:</strong> {{ indice['parcial'] }}</p>
+                    <p style="margin: 0.3rem 0; color: #555;"><strong>Importancia:</strong> {{ indice['porcentaje'] }}%</p>
+                    {% if ultima_evaluacion %}
+                    <p style="margin: 0.3rem 0; color: #4361ee;"><strong>Última Evaluación:</strong> {{ ultima_evaluacion['porcentaje_dominio'] }}% ({{ ultima_evaluacion['fecha_evaluacion'].strftime('%d/%m/%Y %H:%M') }})</p>
+                    {% endif %}
+                </div>
+
+                <!-- Histórico de Evaluaciones -->
+                {% if evaluaciones %}
+                <h3 style="color: #4361ee; margin-top: 2rem; margin-bottom: 1rem;">Histórico de Evaluaciones</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Porcentaje Dominio (%)</th>
+                            <th>Comentario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eval in evaluaciones %}
+                        <tr>
+                            <td>{{ eval['fecha_evaluacion'].strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td><strong>{{ eval['porcentaje_dominio'] }}%</strong></td>
+                            <td>{{ eval['comentario'] if eval['comentario'] else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <!-- Formulario de Evaluación -->
+                <h3 style="color: #4361ee; margin-top: 2rem; margin-bottom: 1rem;">Registrar Nueva Evaluación Grupal</h3>
+                <form method="POST" action="{{ url_for('evaluar_indice', id_indice=indice['id']) }}">
+                    <label for="porcentaje_dominio">Porcentaje de Dominio del Grupo (%):</label>
+                    <input type="number" name="porcentaje_dominio" id="porcentaje_dominio" min="0" max="100" step="0.1" required placeholder="Ej: 85.5">
+                    <small style="display: block; color: #999; margin-top: 0.3rem;">Indica el nivel de dominio general del grupo en este índice (0-100%)</small>
+
+                    <label for="comentario" style="margin-top: 1rem;">Comentarios Adicionales:</label>
+                    <textarea name="comentario" id="comentario" rows="4" placeholder="Observaciones sobre el desempeño grupal, fortalezas, áreas de mejora, etc."></textarea>
+
+                    <button type="submit" style="margin-top: 1rem;">Guardar Evaluación</button>
+                </form>
+
+                <!-- Botón de regresar -->
+                <a href="{{ url_for('indices') }}" style="text-decoration: none; display: block;">
+                    <button type="button" class="btn-back">Volver</button>
+                </a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

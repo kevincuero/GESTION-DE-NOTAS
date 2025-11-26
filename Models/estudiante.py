@@ -32,16 +32,18 @@ class Estudiante:
 
     @staticmethod
     def obtener_notas(id_estudiante):
-        """Obtiene las notas de un estudiante por su ID."""
+        """Obtiene las notas de un estudiante por su ID con comentario y fecha."""
         conexion = create_connection()
         if conexion:
             try:
                 with conexion.cursor(dictionary=True) as cursor:
                     query = """
-                        SELECT m.nombre AS materia, n.nota
+                        SELECT m.nombre AS materia, n.nota, n.comentario, 
+                               DATE_FORMAT(n.fecha, '%Y-%m-%d %H:%i') AS fecha
                         FROM notas n
                         JOIN materias m ON n.id_materia = m.id
                         WHERE n.id_estudiante = %s
+                        ORDER BY n.fecha DESC
                     """
                     cursor.execute(query, (id_estudiante,))
                     return cursor.fetchall()

@@ -1,5 +1,5 @@
 # tests/test_estudiante.py
-import pytest
+import pytest # type: ignore
 from main import app  # Ajusta si tu app está en otro módulo
 
 @pytest.fixture

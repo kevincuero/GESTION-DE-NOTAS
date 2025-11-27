@@ -26,14 +26,16 @@ def test_tabla_mensajes_existe():
             
             if tabla:
                 print("   ✅ Tabla mensajes existe\n")
-                return True
+                assert True
             else:
                 print("   ❌ Tabla mensajes NO existe\n")
-                return False
+                assert False
         except Exception as e:
             print(f"   ❌ Error: {e}\n")
-            return False
-    return False
+            assert False
+    else:
+        print("   ❌ No hay conexión a base de datos\n")
+        assert False
 
 
 def test_crear_mensaje():
@@ -45,7 +47,7 @@ def test_crear_mensaje():
         
         if not notif_id:
             print("   ⚠️  No se pudo crear notificación\n")
-            return False
+            assert False
         
         # Crear mensaje
         mensaje_id = Mensaje.crear(
@@ -59,13 +61,13 @@ def test_crear_mensaje():
         
         if mensaje_id:
             print(f"   ✅ Mensaje creado: ID {mensaje_id}\n")
-            return True
+            assert True
         else:
             print("   ❌ Error al crear mensaje\n")
-            return False
+            assert False
     except Exception as e:
         print(f"   ❌ Error: {e}\n")
-        return False
+        assert False
 
 
 def test_obtener_mensajes():
@@ -89,16 +91,16 @@ def test_obtener_mensajes():
                 
                 if mensajes:
                     print(f"   ✅ Se obtuvieron {len(mensajes)} mensajes\n")
-                    return True
+                    assert True
                 else:
                     print("   ⚠️  No hay mensajes para esa notificación\n")
-                    return True
+                    assert True
         else:
             print("   ⚠️  No hay conexión\n")
-            return True
+            assert True
     except Exception as e:
         print(f"   ⚠️  {e}\n")
-        return True
+        assert True
 
 
 def test_marcar_leido():
@@ -119,15 +121,15 @@ def test_marcar_leido():
                 
                 if result:
                     print(f"   ✅ Mensaje marcado como leído\n")
-                    return True
+                    assert True
             
             cursor.close()
             conexion.close()
             print("   ⚠️  No hay mensajes sin leer\n")
-            return True
+            assert True
     except Exception as e:
         print(f"   ⚠️  {e}\n")
-        return True
+        assert True
 
 
 def test_controlador_enviar_respuesta():
@@ -167,18 +169,18 @@ def test_controlador_enviar_respuesta():
                 
                 if resultado['success']:
                     print(f"   ✅ Respuesta enviada: {resultado['message']}\n")
-                    return True
+                    assert True
                 else:
                     print(f"   ❌ Error: {resultado['message']}\n")
-                    return False
+                    assert False
             
             cursor.close()
             conexion.close()
             print("   ⚠️  No hay notificaciones de prueba\n")
-            return True
+            assert True
     except Exception as e:
         print(f"   ⚠️  {e}\n")
-        return True
+        assert True
 
 
 def test_controlador_obtener_notificacion():
@@ -205,13 +207,13 @@ def test_controlador_obtener_notificacion():
                     notif_data = resultado.get('notificacion')
                     mensajes = resultado.get('mensajes', [])
                     print(f"   ✅ Notificación obtenida con {len(mensajes)} mensajes\n")
-                    return True
+                    assert True
             
             print("   ⚠️  No hay notificaciones\n")
-            return True
+            assert True
     except Exception as e:
         print(f"   ⚠️  {e}\n")
-        return True
+        assert True
 
 
 def test_estructura_bd():
@@ -237,13 +239,13 @@ def test_estructura_bd():
             
             if todos_presentes:
                 print(f"   ✅ Estructura correcta ({len(campos_reales)} campos)\n")
-                return True
+                assert True
             else:
                 print(f"   ❌ Faltan campos: {set(campos_esperados) - set(campos_reales)}\n")
-                return False
+                assert False
     except Exception as e:
         print(f"   ❌ Error: {e}\n")
-        return False
+        assert False
 
 
 def main():

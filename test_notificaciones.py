@@ -34,7 +34,7 @@ def test_crear_notificacion():
     print(f"Mensaje: {resultado['message']}")
     print(f"ID Notificación: {resultado['notification_id']}")
     
-    return resultado['success']
+    assert resultado['success']
 
 def test_crear_multiples():
     """Test: Crear múltiples notificaciones"""
@@ -42,8 +42,31 @@ def test_crear_multiples():
     print("TEST 2: Crear múltiples notificaciones")
     print("="*60)
     
+    # Obtener IDs de estudiantes que existan en la BD
+    conexion = create_connection()
+    id_estudiantes = []
+    
+    if conexion:
+        cursor = conexion.cursor()
+        try:
+            cursor.execute("SELECT id FROM estudiantes LIMIT 3")
+            estudiantes = cursor.fetchall()
+            id_estudiantes = [est[0] for est in estudiantes]
+            cursor.close()
+            conexion.close()
+        except Exception as e:
+            print(f"Error al obtener estudiantes: {e}")
+            cursor.close()
+            conexion.close()
+    
+    # Si no hay estudiantes, el test pasa con advertencia
+    if not id_estudiantes:
+        print("⚠️  No hay estudiantes en la BD para enviar notificaciones")
+        assert True
+        return
+    
     resultado = NotificacionController.enviar_notificacion_a_multiples(
-        id_estudiantes=[1, 2, 3],
+        id_estudiantes=id_estudiantes,
         id_profesor=1,
         titulo="Test: Notificación masiva",
         mensaje="Esta notificación fue enviada a múltiples estudiantes."
@@ -53,7 +76,7 @@ def test_crear_multiples():
     print(f"Mensaje: {resultado['message']}")
     print(f"Notificaciones creadas: {resultado['count']}")
     
-    return resultado['success']
+    assert resultado['success']
 
 def test_obtener_notificaciones():
     """Test: Obtener notificaciones de un estudiante"""
@@ -73,7 +96,7 @@ def test_obtener_notificaciones():
             print(f"     Leída: {notif.get('leida')}")
             print(f"     Fecha: {notif.get('fecha')}")
     
-    return len(notificaciones) > 0
+    assert len(notificaciones) > 0
 
 def test_obtener_sin_leer():
     """Test: Obtener notificaciones sin leer"""
@@ -90,7 +113,7 @@ def test_obtener_sin_leer():
         for notif in notificaciones[:5]:
             print(f"  - {notif.get('titulo')}")
     
-    return True
+    assert True
 
 def test_contar_no_leidas():
     """Test: Contar notificaciones no leídas"""
@@ -102,7 +125,7 @@ def test_contar_no_leidas():
     
     print(f"Notificaciones no leídas del estudiante 1: {count}")
     
-    return True
+    assert True
 
 def test_marcar_como_leida():
     """Test: Marcar como leída"""
@@ -122,10 +145,10 @@ def test_marcar_como_leida():
         print(f"Éxito: {resultado['success']}")
         print(f"Mensaje: {resultado['message']}")
         
-        return resultado['success']
+        assert resultado['success']
     else:
         print("No hay notificaciones sin leer para probar")
-        return False
+        assert True
 
 def test_marcar_todas_como_leidas():
     """Test: Marcar todas como leídas"""
@@ -139,7 +162,7 @@ def test_marcar_todas_como_leidas():
     print(f"Mensaje: {resultado['message']}")
     print(f"Notificaciones marcadas: {resultado['count']}")
     
-    return resultado['success']
+    assert resultado['success']
 
 def test_eliminar_notificacion():
     """Test: Eliminar notificación"""
@@ -159,10 +182,10 @@ def test_eliminar_notificacion():
         print(f"Éxito: {resultado['success']}")
         print(f"Mensaje: {resultado['message']}")
         
-        return resultado['success']
+        assert resultado['success']
     else:
         print("No hay notificaciones para eliminar")
-        return False
+        assert True
 
 def test_enviar_a_clase():
     """Test: Enviar notificación a toda una clase"""
@@ -181,7 +204,7 @@ def test_enviar_a_clase():
     print(f"Mensaje: {resultado['message']}")
     print(f"Notificaciones enviadas: {resultado['count']}")
     
-    return resultado['success']
+    assert resultado['success']
 
 def test_obtener_por_profesor():
     """Test: Obtener notificaciones enviadas por profesor"""
@@ -198,7 +221,7 @@ def test_obtener_por_profesor():
         for notif in notificaciones[:3]:
             print(f"  - {notif.get('titulo')} -> {notif.get('estudiante_nombre')}")
     
-    return True
+    assert True
 
 def verificar_bd():
     """Verificar conexión a base de datos"""

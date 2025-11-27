@@ -1949,9 +1949,19 @@ def obtener_eventos_mes(anio, mes):
 # Main
 # --------------------------
 
+@app.route('/')
+def home():
+    return "Aplicación funcionando correctamente"
+
+# --------------------------------
+# Factory para pytest
+# --------------------------------
 def create_app():
     """Crea y configura la aplicación para usarla en pytest."""
     return app
 
+# --------------------------------
+# Modo desarrollo local
+# --------------------------------
 if __name__ == '__main__':
     app.run(debug=True)

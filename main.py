@@ -1949,10 +1949,6 @@ def obtener_eventos_mes(anio, mes):
 # Main
 # --------------------------
 
-@app.route('/')
-def home():
-    return "Aplicación funcionando correctamente"
-
 # --------------------------------
 # Factory para pytest
 # --------------------------------

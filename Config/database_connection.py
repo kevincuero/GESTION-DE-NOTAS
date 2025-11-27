@@ -19,6 +19,15 @@ class NullCursor:
 
     def close(self):
         return None
+    
+    # Simular atributos usados por el código (por ejemplo lastrowid)
+    @property
+    def lastrowid(self):
+        return None
+
+    @property
+    def rowcount(self):
+        return 0
 
 
 class NullConnection:
@@ -31,6 +40,12 @@ class NullConnection:
 
     def close(self):
         return None
+    
+    def is_connected(self):
+        return False
+
+    def ping(self, reconnect=False, attempts=1, delay=0):
+        return False
 
 
 def create_connection(retries: int = 3, delay: float = 1.0):

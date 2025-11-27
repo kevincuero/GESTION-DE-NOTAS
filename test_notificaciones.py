@@ -23,9 +23,24 @@ def has_db_connection():
     """Verifica si hay conexión a base de datos"""
     try:
         conexion = create_connection()
-        if conexion:
+        # create_connection puede devolver un NullConnection en modo degradado.
+        if not conexion:
+            return False
+        # Si tiene is_connected(), usarlo
+        is_conn = getattr(conexion, 'is_connected', None)
+        if callable(is_conn):
+            try:
+                ok = conexion.is_connected()
+            except Exception:
+                ok = False
+        else:
+            # Si es un NullConnection, su clase suele llamarse 'NullConnection'
+            ok = conexion.__class__.__name__ != 'NullConnection'
+        try:
             conexion.close()
-            return True
+        except Exception:
+            pass
+        return bool(ok)
     except:
         pass
     return False

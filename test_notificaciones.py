@@ -13,9 +13,25 @@ Requisitos:
 import sys
 sys.path.insert(0, '.')
 
+import pytest
 from Config.database_connection import create_connection
 from Controllers.notificacion_controller import NotificacionController
 from Models.notificacion import Notificacion
+
+# Verificar conexión a BD disponible
+def has_db_connection():
+    """Verifica si hay conexión a base de datos"""
+    try:
+        conexion = create_connection()
+        if conexion:
+            conexion.close()
+            return True
+    except:
+        pass
+    return False
+
+# Skip todos los tests de BD si no hay conexión
+pytestmark = pytest.mark.skipif(not has_db_connection(), reason="No database connection available")
 
 def test_crear_notificacion():
     """Test: Crear una notificación"""

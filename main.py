@@ -1648,6 +1648,7 @@ def horario_estudiante():
     usuario = session['usuario']
     conexion = create_connection()
     horario = []
+    materias = []
     if conexion:
         try:
             cursor = conexion.cursor(dictionary=True)

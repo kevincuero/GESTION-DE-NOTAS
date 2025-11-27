@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 import time
 
 load_dotenv()

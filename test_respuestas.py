@@ -18,12 +18,31 @@ def has_db_connection():
     """Verifica si hay conexión a base de datos"""
     try:
         conexion = create_connection()
-        if conexion:
+        if not conexion:
+            return False
+        is_conn = getattr(conexion, 'is_connected', None)
+        if callable(is_conn):
+            try:
+                ok = conexion.is_connected()
+            except Exception:
+                ok = False
+        else:
+            ok = conexion.__class__.__name__ != 'NullConnection'
+        try:
             conexion.close()
-            return True
-    except:
-        pass
-    return False
+        except Exception:
+            pass
+        return bool(ok)
+    except Exception:
+        return False
+
+
+def ensure_db_or_skip():
+    """Devuelve una conexión real o hace pytest.skip si no hay DB accesible."""
+    if not has_db_connection():
+        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
+        pytest.skip("No database connection")
+    return create_connection()
 
 # Skip todos los tests de BD si no hay conexión
 pytestmark = pytest.mark.skipif(not has_db_connection(), reason="No database connection available")
@@ -31,10 +50,7 @@ pytestmark = pytest.mark.skipif(not has_db_connection(), reason="No database con
 def test_tabla_mensajes_existe():
     """Verifica que la tabla mensajes exista."""
     print("🧪 Test 1: Verificar tabla mensajes...")
-    conexion = create_connection()
-    if not conexion:
-        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
-        pytest.skip("No database connection")
+    conexion = ensure_db_or_skip()
     
     try:
         cursor = conexion.cursor()
@@ -58,10 +74,7 @@ def test_tabla_mensajes_existe():
 def test_crear_mensaje():
     """Prueba crear un mensaje."""
     print("🧪 Test 2: Crear mensaje...")
-    conexion = create_connection()
-    if not conexion:
-        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
-        pytest.skip("No database connection")
+    conexion = ensure_db_or_skip()
     
     try:
         # Crear una notificación primero
@@ -95,10 +108,7 @@ def test_crear_mensaje():
 def test_obtener_mensajes():
     """Prueba obtener mensajes de una notificación."""
     print("🧪 Test 3: Obtener mensajes...")
-    conexion = create_connection()
-    if not conexion:
-        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
-        pytest.skip("No database connection")
+    conexion = ensure_db_or_skip()
     
     try:
         # Buscar una notificación con mensajes
@@ -131,10 +141,7 @@ def test_obtener_mensajes():
 def test_marcar_leido():
     """Prueba marcar mensaje como leído."""
     print("🧪 Test 4: Marcar como leído...")
-    conexion = create_connection()
-    if not conexion:
-        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
-        pytest.skip("No database connection")
+    conexion = ensure_db_or_skip()
     
     try:
         cursor = conexion.cursor()
@@ -163,10 +170,7 @@ def test_marcar_leido():
 def test_controlador_enviar_respuesta():
     """Prueba controlador para enviar respuesta."""
     print("🧪 Test 5: Controlador - Enviar respuesta...")
-    conexion = create_connection()
-    if not conexion:
-        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
-        pytest.skip("No database connection")
+    conexion = ensure_db_or_skip()
     
     try:
         # Primero obtener IDs válidos
@@ -217,10 +221,7 @@ def test_controlador_enviar_respuesta():
 def test_controlador_obtener_notificacion():
     """Prueba obtener notificación con detalles."""
     print("🧪 Test 6: Controlador - Obtener notificación...")
-    conexion = create_connection()
-    if not conexion:
-        print("   ⚠️  No hay conexión a base de datos (skipped en CI)\n")
-        pytest.skip("No database connection")
+    conexion = ensure_db_or_skip()
     
     try:
         cursor = conexion.cursor()

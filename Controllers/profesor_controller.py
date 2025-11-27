@@ -256,3 +256,43 @@ class ProfesorController:
         """Envía notificación EN PLATAFORMA (sin correo electrónico)."""
         from Models.notificacion import Notificacion
         return Notificacion.crear(id_estudiante, id_profesor, titulo, mensaje)
+    
+# ----Funcion para que funcione el pytest de docente ----
+@staticmethod
+def obtener_estudiantes_de_profesor(id_profesor):
+    conexion = create_connection()
+    if not conexion:
+        return []
+
+    cursor = conexion.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT DISTINCT e.id, e.nombre
+        FROM estudiantes e
+        JOIN notas n ON n.id_estudiante = e.id
+        WHERE n.id_profesor = %s
+    """, (id_profesor,))
+    resultado = cursor.fetchall()
+    cursor.close()
+    conexion.close()
+
+    return resultado
+
+@staticmethod
+def buscar_estudiante_por_nombre(id_profesor, nombre):
+    conexion = create_connection()
+    if not conexion:
+        return []
+
+    cursor = conexion.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT DISTINCT e.id, e.nombre
+        FROM estudiantes e
+        JOIN notas n ON n.id_estudiante = e.id
+        WHERE n.id_profesor = %s AND e.nombre LIKE %s
+    """, (id_profesor, f"%{nombre}%"))
+    
+    resultado = cursor.fetchall()
+    cursor.close()
+    conexion.close()
+
+    return resultado

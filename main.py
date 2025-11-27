@@ -1956,6 +1956,28 @@ def create_app():
     """Crea y configura la aplicación para usarla en pytest."""
     return app
 
+
+# Health check y estado de la BD
+@app.route('/_health')
+def health_check():
+    """Endpoint simple que devuelve el estado de la aplicación y la base de datos."""
+    try:
+        conexion = create_connection()
+        # Si la conexión es un NullConnection tendrá método cursor pero no datos
+        db_ok = conexion is not None and not getattr(conexion, '__class__', type(conexion)).__name__ == 'NullConnection'
+        status = {
+            'app': 'ok',
+            'db': 'ok' if db_ok else 'unavailable',
+        }
+        # Si la conexión tiene close(), cerrar para liberar recursos
+        try:
+            conexion.close()
+        except Exception:
+            pass
+        return jsonify(status), 200 if db_ok else 200
+    except Exception as e:
+        return jsonify({'app': 'error', 'error': str(e)}), 500
+
 # --------------------------------
 # Modo desarrollo local
 # --------------------------------

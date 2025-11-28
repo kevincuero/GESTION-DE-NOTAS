@@ -2,6 +2,8 @@ from Config.database_connection import create_connection
 from Models.usuario import Usuario
 from Controllers.admin_controller import AdminController
 
+"""Falta por mejorar varias cosas"""
+
 class Admin:
     def __init__(self, id, nombre, correo, contraseña):
         self.id = id

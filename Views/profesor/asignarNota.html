@@ -9,36 +9,37 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="main-layout">
-        <!-- Sidebar Persistente -->
-        <aside class="sidebar">
-            <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
-            <nav>
-                <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
-                    <i class="fas fa-users"></i> Obtener Estudiantes
-                </a>
-                <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
-                    <i class="fas fa-edit"></i> Asignar Nota
-                </a>
-                <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
-                    <i class="fas fa-sync-alt"></i> Cambiar Nota
-                </a>
-                <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
-                    <i class="fas fa-envelope"></i> Notificar
-                </a>
-            </nav>
-            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-        </aside>
+  <div class="main-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <i class="fas fa-chalkboard-teacher"></i>
+      Profesor
+    </div>
+    <nav>
+      <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-home"></i> Dashboard</a>
+      <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Obtener Estudiantes</a>
+      <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Asignar Nota</a>
+      <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}"><i class="fas fa-sync-alt"></i> Cambiar Nota</a>
+      <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Notificar</a>
+      <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
+      <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+    </nav>
+    <a href="/logout" class="btn-logout">
+      <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+    </a>
+  </aside>
 
-        <!-- Main Content -->
-        <main class="content">
-            <div class="container">
-                <h1>Asignar Nota</h1>
-                
-                <!-- Formulario 1: Seleccionar Materia -->
+  <!-- Main Content -->
+  <main class="content">
+    <div class="dashboard-header">
+      <h1 class="welcome-message">Bienvenido, {{ usuario['nombre'] }}</h1>
+    </div>
+
+    <div class="container">
+      <h1>Asignar Nota</h1>
+      
+      <!-- Formulario 1: Seleccionar Materia -->
                 <form method="POST" action="{{ url_for('asignar_nota') }}" id="formSeleccionMateria">
                     <label for="id_materia">Selecciona una materia:</label>
                     <select name="id_materia" id="id_materia" required>

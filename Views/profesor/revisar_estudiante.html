@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revisar Estudiante - Profesor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+</head>
+<body>
+<div class="main-layout">
+  <!-- Sidebar (mismo que en dashboard) -->
+  <aside class="sidebar">
+    <div class="logo">
+      <i class="fas fa-chalkboard-teacher"></i>
+      Profesor
+    </div>
+    <nav>
+      <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-home"></i> Dashboard</a>
+      <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Obtener Estudiantes</a>
+      <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Asignar Nota</a>
+      <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}"><i class="fas fa-sync-alt"></i> Cambiar Nota</a>
+      <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Notificar</a>
+      <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
+      <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+    </nav>
+    <a href="/logout" class="btn-logout">
+      <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+    </a>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    <div class="dashboard-header">
+      <h1 class="welcome-message">Informe del Estudiante</h1>
+    </div>
+
+    <div class="container">
+      {% if estudiante %}
+        <div class="student-info">
+          <h2>{{ estudiante['nombre'] }}</h2>
+          <p><strong>Correo:</strong> {{ estudiante['correo'] }}</p>
+        </div>
+      {% else %}
+        <p>Estudiante no encontrado.</p>
+      {% endif %}
+
+      <h3>Materias inscritas y calificaciones</h3>
+      {% if informe %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Materia</th>
+                <th>Profesor</th>
+                <th>Tipo de Nota</th>
+                <th>Nota</th>
+                <th>Comentario</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for m in informe %}
+              {% if m.notas and m.notas|length > 0 %}
+                {% for nota in m.notas %}
+                <tr>
+                  <td>{{ m.materia }}</td>
+                  <td>{{ m.profesor or 'Sin profesor asignado' }}</td>
+                  <td>{{ nota.tipo }}</td>
+                  <td>{{ nota.nota }}</td>
+                  <td>{{ nota.comentario }}</td>
+                  <td>{{ nota.fecha }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td>{{ m.materia }}</td>
+                  <td>{{ m.profesor or 'Sin profesor asignado' }}</td>
+                  <td colspan="4">No hay calificaciones registradas</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>El estudiante no está inscrito en ninguna materia o no tiene registros.</p>
+      {% endif %}
+
+      <a href="{{ url_for('obtener_estudiantes') }}"><button class="btn-back">Volver</button></a>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

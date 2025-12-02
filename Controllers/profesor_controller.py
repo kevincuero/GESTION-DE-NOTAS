@@ -131,19 +131,63 @@ class ProfesorController:
         return False
 
     @staticmethod
-    def cambiar_nota(id_estudiante, id_materia, nueva_nota, tipo_evaluacion, comentario, id_profesor):
-        """Cambia la nota y el comentario de un estudiante en una materia específica para un tipo de evaluación."""
+    def obtener_nota_por_estudiante_materia(id_estudiante, id_materia, id_profesor):
+        """Obtiene la primera nota de un estudiante en una materia para un profesor específico."""
         conexion = create_connection()
         if conexion:
             try:
-                cursor = conexion.cursor()
+                cursor = conexion.cursor(dictionary=True)
+                query = """
+                SELECT id, tipo_evaluacion FROM notas
+                WHERE id_estudiante=%s AND id_materia=%s AND id_profesor=%s
+                LIMIT 1
+                """
+                cursor.execute(query, (id_estudiante, id_materia, id_profesor))
+                resultado = cursor.fetchone()
+                return resultado
+            except Exception as e:
+                print(f"Error al obtener nota del estudiante: {e}")
+                return None
+            finally:
+                cursor.close()
+                conexion.close()
+        return None
+
+    @staticmethod
+    def cambiar_nota(id_estudiante, id_materia, nueva_nota, tipo_nota, comentario, id_profesor):
+        """Cambia la nota, tipo de evaluación y comentario de un estudiante en una materia específica."""
+        conexion = create_connection()
+        if conexion:
+            try:
+                # Primero obtener el tipo_evaluacion anterior para hacer el WHERE correcto
+                cursor = conexion.cursor(dictionary=True)
+                cursor.execute("""
+                    SELECT tipo_evaluacion FROM notas
+                    WHERE id_estudiante=%s AND id_materia=%s AND id_profesor=%s
+                    LIMIT 1
+                """, (id_estudiante, id_materia, id_profesor))
+                nota_actual = cursor.fetchone()
+                
+                if not nota_actual:
+                    print(f"No se encontró nota para estudiante {id_estudiante} en materia {id_materia}")
+                    return False
+                
+                tipo_anterior = nota_actual['tipo_evaluacion']
+                
+                # Ahora actualizar usando el tipo anterior en el WHERE
                 cursor.execute("""
                     UPDATE notas
-                    SET nota=%s, comentario=%s, fecha=NOW()
+                    SET nota=%s, tipo_evaluacion=%s, comentario=%s, fecha=NOW()
                     WHERE id_estudiante=%s AND id_materia=%s AND id_profesor=%s AND tipo_evaluacion=%s
-                """, (nueva_nota, comentario, id_estudiante, id_materia, id_profesor, tipo_evaluacion))
+                """, (nueva_nota, tipo_nota, comentario, id_estudiante, id_materia, id_profesor, tipo_anterior))
                 conexion.commit()
-                return True
+                
+                if cursor.rowcount > 0:
+                    print(f"Nota actualizada: estudiante {id_estudiante}, materia {id_materia}, tipo anterior {tipo_anterior} -> nuevo tipo {tipo_nota}")
+                    return True
+                else:
+                    print(f"No se actualizó ninguna fila para estudiante {id_estudiante}")
+                    return False
             except Exception as e:
                 print(f"Error al cambiar nota: {e}")
                 return False

@@ -10,32 +10,33 @@
 </head>
 <body>
   <div class="main-layout">
-    <!-- Sidebar Persistente -->
-    <aside class="sidebar">
-      <div class="logo"><i class="fas fa-chalkboard-teacher"></i> Profesor</div>
-      <nav>
-        <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}">
-          <i class="fas fa-home"></i> Dashboard
-        </a>
-        <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}">
-          <i class="fas fa-users"></i> Obtener Estudiantes
-        </a>
-        <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}">
-          <i class="fas fa-edit"></i> Asignar Nota
-        </a>
-        <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}">
-          <i class="fas fa-sync-alt"></i> Cambiar Nota
-        </a>
-        <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}">
-          <i class="fas fa-envelope"></i> Notificar
-        </a>
-      </nav>
-      <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-    </aside>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <i class="fas fa-chalkboard-teacher"></i>
+      Profesor
+    </div>
+    <nav>
+      <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-home"></i> Dashboard</a>
+      <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Obtener Estudiantes</a>
+      <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Asignar Nota</a>
+      <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}"><i class="fas fa-sync-alt"></i> Cambiar Nota</a>
+      <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Notificar</a>
+      <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
+      <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
+    </nav>
+    <a href="/logout" class="btn-logout">
+      <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+    </a>
+  </aside>
 
-    <!-- Main Content -->
-    <main class="content">
-      <div class="container">
+  <!-- Main Content -->
+  <main class="content">
+    <div class="dashboard-header">
+      <h1 class="welcome-message">Bienvenido, {{ usuario['nombre'] }}</h1>
+    </div>
+
+    <div class="container">
     <h1>Cambiar Nota</h1>
 
     <form method="POST" action="{{ url_for('cambiar_nota') }}">
@@ -50,13 +51,15 @@
     </form>
 
     {% if estudiantes %}
-    <form method="POST" action="{{ url_for('cambiar_nota') }}">
+    <form method="POST" action="{{ url_for('cambiar_nota') }}" id="formCambiarNotas">
       <input type="hidden" name="id_materia" value="{{ request.form.get('id_materia') }}">
+      
       <table>
         <thead>
           <tr>
             <th>Nombre del Estudiante</th>
             <th>Correo</th>
+            <th>Tipo de Nota</th>
             <th>Nota</th>
             <th>Comentario</th>
           </tr>
@@ -67,11 +70,24 @@
             <td>{{ estudiante['estudiante'] }}</td>
             <td>{{ estudiante['correo'] }}</td>
             <td>
-              <input class="nota-cambiar-input" type="number" name="nueva_nota[]" min="0" max="100" required>
+              <select class="tipo-nota-cambiar-select" name="tipo_nota_cambiar[]" required>
+                <option value="" disabled selected>-- Tipo --</option>
+                <option value="Parcial 1">Parcial 1</option>
+                <option value="Parcial 2">Parcial 2</option>
+                <option value="Parcial 3">Parcial 3</option>
+                <option value="Quiz">Quiz</option>
+                <option value="Tarea">Tarea</option>
+                <option value="Proyecto">Proyecto</option>
+                <option value="Participación">Participación</option>
+                <option value="Examen Final">Examen Final</option>
+              </select>
+            </td>
+            <td>
+              <input class="nota-cambiar-input" type="number" name="nueva_nota[]" min="0" max="5" step="0.1" required placeholder="0.0">
               <input type="hidden" name="id_estudiante[]" value="{{ estudiante['id'] }}">
             </td>
             <td>
-              <textarea class="comentario-cambiar-textarea" name="comentario[]" rows="3" placeholder="Escribe un comentario..."></textarea>
+              <textarea class="comentario-cambiar-textarea" name="comentario[]" rows="2" placeholder="Comentario..."></textarea>
             </td>
           </tr>
           {% endfor %}
@@ -79,8 +95,32 @@
       </table>
       <button type="submit">Cambiar Nota</button>
     </form>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const formCambiarNotas = document.getElementById('formCambiarNotas');
+
+        if (formCambiarNotas) {
+          formCambiarNotas.addEventListener('submit', function(e) {
+            const notasInputs = document.querySelectorAll('.nota-cambiar-input');
+            let tieneAlgunaNota = false;
+            notasInputs.forEach(input => {
+              if (input.value && parseFloat(input.value) >= 0) {
+                tieneAlgunaNota = true;
+              }
+            });
+
+            if (!tieneAlgunaNota) {
+              e.preventDefault();
+              alert('Por favor, ingresa al menos una nota');
+              return false;
+            }
+          });
+        }
+      });
+    </script>
     {% else %}
-      <p>No hay estudiantes inscritos en esta materia.</p>
+    <p>No hay estudiantes inscritos en esta materia.</p>
     {% endif %}
 
         <a href="{{ url_for('profesor_dashboard') }}" style="text-decoration: none;">

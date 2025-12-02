@@ -188,6 +188,63 @@ class EstudianteController:
         }
 
     @staticmethod
+    def obtener_informe_estudiante(id_estudiante):
+        """Genera un informe general del estudiante: materias inscritas, notas (con tipo) y profesor de cada nota."""
+        conexion = create_connection()
+        informe = []
+        if conexion:
+            try:
+                cursor = conexion.cursor(dictionary=True)
+                # Obtener todas las materias en las que está inscrito
+                query = """
+                SELECT m.id as id_materia, m.nombre as materia, p.id as id_profesor, p.nombre as profesor,
+                       n.id as id_nota, n.tipo_evaluacion, n.nota, n.comentario, n.fecha
+                FROM inscripciones i
+                JOIN materias m ON i.id_materia = m.id
+                LEFT JOIN notas n ON n.id_materia = m.id AND n.id_estudiante = i.id_estudiante
+                LEFT JOIN profesores p ON n.id_profesor = p.id OR p.id = (
+                    SELECT a.id_profesor FROM asignaciones a WHERE a.id_materia = m.id LIMIT 1
+                )
+                WHERE i.id_estudiante = %s
+                ORDER BY m.nombre, n.tipo_evaluacion
+                """
+                cursor.execute(query, (id_estudiante,))
+                rows = cursor.fetchall()
+
+                # Agrupar por materia
+                materias = {}
+                for r in rows:
+                    mid = r.get('id_materia')
+                    if mid not in materias:
+                        materias[mid] = {
+                            'id': mid,
+                            'materia': r.get('materia'),
+                            'profesor': r.get('profesor'),
+                            'notas': []
+                        }
+                    if r.get('id_nota'):
+                        materias[mid]['notas'].append({
+                            'id_nota': r.get('id_nota'),
+                            'tipo': r.get('tipo_evaluacion'),
+                            'nota': r.get('nota'),
+                            'comentario': r.get('comentario'),
+                            'fecha': r.get('fecha')
+                        })
+
+                # Convertir a lista
+                for m in materias.values():
+                    informe.append(m)
+
+                return informe
+            except Exception as e:
+                print(f"Error al generar informe del estudiante: {e}")
+                return []
+            finally:
+                cursor.close()
+                conexion.close()
+        return informe
+
+    @staticmethod
     def ver_notas():
         """Obtiene las notas del estudiante desde la base de datos."""
         if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':

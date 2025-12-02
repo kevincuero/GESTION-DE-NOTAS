@@ -332,6 +332,21 @@ footer {
     text-align: center;
 }
 
+/* Estilo para el select de tipo de nota en cambiarNota.html */
+.tipo-nota-cambiar-select {
+  vertical-align: middle;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  height: 45px;
+  background: #f8f9fa;
+  box-sizing: border-box;
+  transform: translateY(10px);
+}
+
+
+
 /* Responsivo */
 @media (max-width: 768px) {
     .container {

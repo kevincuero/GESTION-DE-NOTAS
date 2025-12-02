@@ -911,26 +911,34 @@ def cambiar_nota():
         id_materia = request.form.get('id_materia')
         ids_estudiantes = request.form.getlist('id_estudiante[]')
         nuevas_notas = request.form.getlist('nueva_nota[]')
+        tipos_notas = request.form.getlist('tipo_nota_cambiar[]')
         comentarios = request.form.getlist('comentario[]')
         id_profesor = session['usuario']['id']
 
-        if ids_estudiantes and nuevas_notas and comentarios:
+        if ids_estudiantes and nuevas_notas and tipos_notas and comentarios:
+            actualizadas = 0
             for i in range(len(ids_estudiantes)):
-                ProfesorController.cambiar_nota(
+                exito = ProfesorController.cambiar_nota(
                     ids_estudiantes[i],
                     id_materia,
                     nuevas_notas[i],
+                    tipos_notas[i],
                     comentarios[i],
                     id_profesor
                 )
-            flash("Notas y comentarios actualizados correctamente.", "success")
+                if exito:
+                    actualizadas += 1
+            if actualizadas > 0:
+                flash(f"{actualizadas} nota(s) actualizada(s) correctamente.", "success")
+            else:
+                flash("No se pudo actualizar ninguna nota. Verifica que los registros existan en la base de datos.", "error")
             return redirect(url_for('cambiar_nota'))
         elif id_materia:
             estudiantes = ProfesorController.obtener_estudiantes_por_materia(id_materia)
         else:
             flash("Por favor, selecciona una materia.", "error")
 
-    return render_template('profesor/cambiarNota.html', materias=materias, estudiantes=estudiantes)
+    return render_template('profesor/cambiarNota.html', materias=materias, estudiantes=estudiantes, usuario=session['usuario'])
 
 
 @app.route('/profesor/enviar_notificacion', methods=['GET', 'POST'])
@@ -999,6 +1007,32 @@ def enviar_notificacion_grupo():
     return redirect(url_for('enviar_notificacion'))
 
 @app.route('/api/estudiantes_por_materia/<int:id_materia>', methods=['GET'])
+@app.route('/profesor/revisar_estudiante/<int:id_estudiante>')
+def revisar_estudiante(id_estudiante):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+    # Obtener datos del estudiante
+    conexion = create_connection()
+    estudiante = None
+    if conexion:
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("SELECT id, nombre, correo FROM estudiantes WHERE id=%s", (id_estudiante,))
+            estudiante = cursor.fetchone()
+        except Exception as e:
+            print(f"Error al obtener datos del estudiante: {e}")
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            conexion.close()
+
+    informe = EstudianteController.obtener_informe_estudiante(id_estudiante)
+    return render_template('profesor/revisar_estudiante.html', estudiante=estudiante, informe=informe, usuario=session['usuario'])
+
+
 def estudiantes_por_materia(id_materia):
     """Retorna estudiantes inscritos en una materia en formato JSON."""
     estudiantes = ProfesorController.obtener_estudiantes_por_materia(id_materia)

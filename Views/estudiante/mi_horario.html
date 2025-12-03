@@ -176,6 +176,14 @@
             box-shadow: 0 4px 12px rgba(79,172,254,0.3);
         }
 
+        .class-slot.enrolled {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+
+        .class-slot.enrolled:hover {
+            box-shadow: 0 4px 12px rgba(81, 207, 102, 0.4);
+        }
+
         .class-name {
             font-weight: 700;
             margin-bottom: 4px;
@@ -225,6 +233,14 @@
         .schedule-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+        }
+
+        .schedule-card.enrolled {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+
+        .schedule-card.enrolled:hover {
+            box-shadow: 0 4px 12px rgba(81, 207, 102, 0.4);
         }
 
         .schedule-card-time {
@@ -548,8 +564,13 @@
                     </button>
                 </div>
 
-                <!-- Weekly View -->
+    <!-- Weekly View -->
                 <div id="weeklyView" class="schedule-container">
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 12px; margin-bottom: 20px;">
+                        <h3 style="color: #2d3142; margin-bottom: 8px;">📋 Mi Semanario Personal</h3>
+                        <p style="color: #666; font-size: 14px;">Crea tu propio semanario con tareas, recordatorios y eventos personales. Selecciona la fecha, hora y color para organizar tu semana.</p>
+                    </div>
+
                     <div class="weekly-schedule">
                         <div class="time-cell">Hora</div>
                         <div class="day-header">Lunes</div>
@@ -562,14 +583,7 @@
                         <div class="time-cell">{{ hora }}</div>
                         {% for dia in ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] %}
                         <div class="schedule-cell" data-dia="{{ dia }}" data-hora="{{ hora }}">
-                            {% for clase in horario %}
-                                {% if clase.dia_semana == dia and clase.hora_inicio == hora %}
-                                <div class="class-slot">
-                                    <div class="class-name">{{ clase.materia }}</div>
-                                    <div class="class-time">{{ clase.hora_inicio }} - {{ clase.hora_fin }}</div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
+                            <!-- Los eventos personales se cargarán aquí con JavaScript -->
                         </div>
                         {% endfor %}
                         {% endfor %}
@@ -578,23 +592,29 @@
 
                 <!-- List View (hidden by default) -->
                 <div id="listView" class="schedule-container" style="display:none;">
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 12px; margin-bottom: 20px;">
+                        <h3 style="color: #2d3142; margin-bottom: 8px;">📚 Mi Horario Académico</h3>
+                        <p style="color: #666; font-size: 14px;">Visualiza tu horario de clases por día de la semana. Las clases en verde son aquellas en las que estás inscrito.</p>
+                    </div>
+
                     <div class="schedule-list">
                         {% set dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] %}
                         {% for dia in dias %}
-                            {% set clases_dia = horario|selectattr('dia_semana', 'equalto', dia)|list %}
                             <div class="schedule-day">
                                 <div class="day-title">📅 {{ dia }}</div>
                                 <div class="day-classes">
+                                    <!-- Las clases se renderizarán aquí -->
+                                    {% set clases_dia = horario|selectattr('dia_semana', 'equalto', dia)|list %}
                                     {% if clases_dia %}
                                         {% for clase in clases_dia %}
-                                        <div class="schedule-card">
+                                        <div class="schedule-card {% if clase.get('id_materia') and clase['id_materia'] in materias_inscritas_ids %}enrolled{% endif %}">
                                             <div class="schedule-card-time">🕐 {{ clase.hora_inicio }} - {{ clase.hora_fin }}</div>
                                             <div class="schedule-card-class">{{ clase.materia }}</div>
                                             <div class="schedule-card-teacher">👨‍🏫 Prof. {{ clase.profesor if clase.profesor else 'No asignado' }}</div>
                                         </div>
                                         {% endfor %}
                                     {% else %}
-                                        <div style="color:#999; padding:8px;">No hay clases registradas</div>
+                                        <div style="color:#999; padding:12px; text-align:center;">No hay clases registradas</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -605,14 +625,18 @@
                 <!-- Legend -->
                 <div class="legend">
                     <div class="legend-item">
+                        <span style="font-weight: 700; color: #2d3142;">📋 Vista Semanal:</span> Semanario personal con eventos
+                    </div>
+                    <div class="legend-item">
+                        <span style="font-weight: 700; color: #2d3142;">📚 Vista por Día:</span> Horario académico de clases
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);"></div>
+                        <span>Clases inscritas ✓</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-color"></div>
-                        <span>Clases programadas</span>
-                    </div>
-                    <div class="legend-item">
-                        📅 Horario académico de lunes a viernes
-                    </div>
-                    <div class="legend-item">
-                        👨‍🏫 Instructores asignados
+                        <span>Clases disponibles</span>
                     </div>
                 </div>
 
@@ -659,19 +683,19 @@
     <div id="eventModal" class="event-modal">
         <div class="event-modal-content">
             <div class="event-modal-header">
-                <h2 class="event-modal-title">Crear Evento</h2>
+                <h2 class="event-modal-title">📝 Crear Evento Personal</h2>
                 <button class="event-modal-close" id="closeEventModal">&times;</button>
             </div>
             
             <form id="eventForm">
                 <div class="form-group">
                     <label for="eventTitulo">Título del evento *</label>
-                    <input type="text" id="eventTitulo" name="titulo" placeholder="Ej: Entregar proyecto" required>
+                    <input type="text" id="eventTitulo" name="titulo" placeholder="Ej: Entregar proyecto, Estudiar para examen" required>
                 </div>
 
                 <div class="form-group">
                     <label for="eventDescripcion">Descripción</label>
-                    <textarea id="eventDescripcion" name="descripcion" placeholder="Agrega detalles sobre el evento..."></textarea>
+                    <textarea id="eventDescripcion" name="descripcion" placeholder="Agrega detalles o notas sobre el evento..."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -696,12 +720,12 @@
                 <div class="form-group">
                     <label>Color del evento</label>
                     <div class="color-picker">
-                        <div class="color-option selected" data-color="#4facfe" style="background:#4facfe;"></div>
-                        <div class="color-option" data-color="#ff6b6b" style="background:#ff6b6b;"></div>
-                        <div class="color-option" data-color="#51cf66" style="background:#51cf66;"></div>
-                        <div class="color-option" data-color="#ffa94d" style="background:#ffa94d;"></div>
-                        <div class="color-option" data-color="#9775fa" style="background:#9775fa;"></div>
-                        <div class="color-option" data-color="#20c997" style="background:#20c997;"></div>
+                        <div class="color-option selected" data-color="#4facfe" title="Azul - Evento general" style="background:#4facfe;"></div>
+                        <div class="color-option" data-color="#ff6b6b" title="Rojo - Urgente" style="background:#ff6b6b;"></div>
+                        <div class="color-option" data-color="#51cf66" title="Verde - Completado" style="background:#51cf66;"></div>
+                        <div class="color-option" data-color="#ffa94d" title="Naranja - En progreso" style="background:#ffa94d;"></div>
+                        <div class="color-option" data-color="#9775fa" title="Púrpura - Importante" style="background:#9775fa;"></div>
+                        <div class="color-option" data-color="#20c997" title="Verde menta - Personal" style="background:#20c997;"></div>
                     </div>
                     <input type="hidden" id="eventColor" name="color" value="#4facfe">
                 </div>
@@ -959,17 +983,74 @@
 
         // Event listeners para botones
         document.addEventListener('DOMContentLoaded', function() {
+            // Cargar eventos personales al iniciar
+            cargarEventos();
+
             // Botones de vista
             document.getElementById('btnSemanal').addEventListener('click', showWeekly);
             document.getElementById('btnDia').addEventListener('click', showList);
-
-            // Cargar eventos al iniciar
-            cargarEventos();
 
             // Establecer fecha mínima en el input de fecha al crear evento
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('eventFecha').setAttribute('min', hoy);
         });
+
+        function renderizarEventosEnCalendario(eventos) {
+            console.log('Renderizando eventos personales en calendario:', eventos);
+            
+            // Limpiar eventos previos
+            document.querySelectorAll('.custom-event').forEach(e => e.remove());
+            
+            eventos.forEach(evento => {
+                // Obtener el día de la semana de la fecha del evento
+                const fecha = new Date(evento.fecha);
+                const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][fecha.getDay()];
+                const horaInicio = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '';
+                
+                // Buscar la celda correspondiente
+                const celda = document.querySelector(`.schedule-cell[data-dia="${diaSemana}"][data-hora="${horaInicio}"]`);
+                
+                if (celda) {
+                    const badge = document.createElement('div');
+                    badge.className = 'custom-event';
+                    badge.style.background = evento.color || '#4facfe';
+                    badge.style.color = '#fff';
+                    badge.style.padding = '8px';
+                    badge.style.margin = '4px 0';
+                    badge.style.borderRadius = '8px';
+                    badge.style.fontSize = '12px';
+                    badge.style.fontWeight = '600';
+                    badge.style.cursor = 'pointer';
+                    badge.style.transition = 'all 0.3s';
+                    badge.innerHTML = `
+                        <div style="font-weight:700; margin-bottom:4px;">${evento.titulo}</div>
+                        <div style="font-size:11px; opacity:0.95;">${horaInicio} - ${evento.hora_fin ? evento.hora_fin.substring(0, 5) : ''}</div>
+                        <div style="margin-top:6px; display:flex; gap:6px;">
+                            <button type="button" onclick="editarEvento(${evento.id})" style="flex:1; padding:4px; background:rgba(255,255,255,0.2); border:none; color:#fff; border-radius:4px; cursor:pointer; font-size:10px;">✏️ Editar</button>
+                            <button type="button" onclick="eliminarEvento(${evento.id})" style="flex:1; padding:4px; background:rgba(255,255,255,0.2); border:none; color:#fff; border-radius:4px; cursor:pointer; font-size:10px;">🗑️ Eliminar</button>
+                        </div>
+                    `;
+                    badge.onmouseover = function() {
+                        this.style.transform = 'scale(1.02)';
+                        this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                    };
+                    badge.onmouseout = function() {
+                        this.style.transform = 'scale(1)';
+                        this.style.boxShadow = 'none';
+                    };
+                    celda.appendChild(badge);
+                }
+            });
+            
+            // Renderizar también en la vista por día
+            renderizarEventosEnListaPorDia(eventos);
+        }
+
+        function renderizarEventosEnListaPorDia(eventos) {
+            // Esta función solo renderiza eventos en la vista semanal
+            // La vista por día usa el contenido de Jinja2 del servidor (clases académicas)
+            // Los eventos personales se mostrarán solo en la vista semanal
+        }
     </script>
 </body>
 </html>

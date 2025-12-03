@@ -1006,7 +1006,6 @@ def enviar_notificacion_grupo():
     
     return redirect(url_for('enviar_notificacion'))
 
-@app.route('/api/estudiantes_por_materia/<int:id_materia>', methods=['GET'])
 @app.route('/profesor/revisar_estudiante/<int:id_estudiante>')
 def revisar_estudiante(id_estudiante):
     if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
@@ -1033,6 +1032,7 @@ def revisar_estudiante(id_estudiante):
     return render_template('profesor/revisar_estudiante.html', estudiante=estudiante, informe=informe, usuario=session['usuario'])
 
 
+@app.route('/api/estudiantes_por_materia/<int:id_materia>', methods=['GET'])
 def estudiantes_por_materia(id_materia):
     """Retorna estudiantes inscritos en una materia en formato JSON."""
     estudiantes = ProfesorController.obtener_estudiantes_por_materia(id_materia)
@@ -1376,7 +1376,17 @@ def clases_estudiante():
     id_estudiante = session['usuario']['id']
     try:
         horario = EstudianteController.obtener_horario(id_estudiante)
-        return render_template('estudiante/mis_clases.html', usuario=session['usuario'], horario=horario)
+        # Obtener IDs de materias inscritas para destacarlas
+        materias_inscritas_ids = []
+        conexion = create_connection()
+        if conexion:
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("SELECT id_materia FROM inscripciones WHERE id_estudiante = %s", (id_estudiante,))
+            inscritas = cursor.fetchall()
+            materias_inscritas_ids = [r['id_materia'] for r in inscritas]
+            cursor.close()
+            conexion.close()
+        return render_template('estudiante/mis_clases.html', usuario=session['usuario'], horario=horario, materias_inscritas_ids=materias_inscritas_ids)
     except Exception as e:
         app.logger.error(f"Error al cargar Mis Clases: {e}")
         flash("Ocurrió un error al cargar tus clases.", "error")
@@ -1683,11 +1693,12 @@ def horario_estudiante():
     conexion = create_connection()
     horario = []
     materias = []
+    materias_inscritas_ids = []
     if conexion:
         try:
             cursor = conexion.cursor(dictionary=True)
             query = """
-                SELECT h.dia_semana, h.hora_inicio, h.hora_fin, m.nombre AS materia, p.nombre AS profesor
+                SELECT h.dia_semana, TIME_FORMAT(h.hora_inicio, '%H:%i') AS hora_inicio, TIME_FORMAT(h.hora_fin, '%H:%i') AS hora_fin, m.nombre AS materia, m.id AS id_materia, p.nombre AS profesor
                 FROM horarios h
                 JOIN materias m ON h.id_materia = m.id
                 LEFT JOIN profesores p ON h.id_profesor = p.id
@@ -1696,6 +1707,14 @@ def horario_estudiante():
             """
             cursor.execute(query, (usuario['id'],))
             horario = cursor.fetchall()
+            print(f"[DEBUG] Horario obtenido para estudiante {usuario['id']}: {horario}")
+            
+            # Obtener IDs de materias inscritas
+            cursor.execute("SELECT id_materia FROM inscripciones WHERE id_estudiante = %s", (usuario['id'],))
+            inscritas = cursor.fetchall()
+            materias_inscritas_ids = [r['id_materia'] for r in inscritas]
+            print(f"[DEBUG] Materias inscritas: {materias_inscritas_ids}")
+            
             # Obtener materias disponibles para inscribirse
             cursor.execute("SELECT id, nombre FROM materias ORDER BY nombre")
             materias = cursor.fetchall()
@@ -1706,11 +1725,12 @@ def horario_estudiante():
             # Asegura que la sesión refleje el permiso (para la plantilla)
             session['usuario'] = usuario
         except Exception as e:
+            print(f"[ERROR] Error al obtener el horario: {e}")
             flash(f"Error al obtener el horario: {e}", "error")
         finally:
             cursor.close()
             conexion.close()
-    return render_template('estudiante/mi_horario.html', usuario=usuario, horario=horario, materias=materias)
+    return render_template('estudiante/mi_horario.html', usuario=usuario, horario=horario, materias=materias, materias_inscritas_ids=materias_inscritas_ids)
 
 
 @app.route('/estudiante/inscribir', methods=['POST'])

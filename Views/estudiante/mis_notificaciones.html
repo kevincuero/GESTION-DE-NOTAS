@@ -860,6 +860,23 @@
             if (replyForm) {
                 replyForm.addEventListener('submit', enviar_respuesta);
             }
+            // Si la URL contiene ?open=<id> abrir esa notificación automáticamente
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const openId = params.get('open');
+                if (openId) {
+                    // Buscar el elemento y simular click (si existe), o bien abrir modal directamente
+                    const el = document.querySelector(`.notification-item[data-id="${openId}"]`);
+                    if (el) {
+                        el.click();
+                    } else {
+                        // Si el elemento no está en la lista (por paginación), abrir modal directamente
+                        abrirModal(openId, null);
+                    }
+                }
+            } catch (e) {
+                console.error('Error al procesar open param:', e);
+            }
         });
     </script>
 </body>

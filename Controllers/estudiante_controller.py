@@ -123,13 +123,21 @@ class EstudianteController:
     @staticmethod
     def obtener_datos_dashboard(id_estudiante):
         """Obtiene todos los datos necesarios para el dashboard del estudiante."""
+        # Obtener notificaciones desde el controlador de notificaciones (misma fuente que la vista de "mis_notificaciones")
+        try:
+            from Controllers.notificacion_controller import NotificacionController
+            notificaciones_completas = NotificacionController.obtener_notificaciones_estudiante(id_estudiante)
+        except Exception:
+            # Fallback al método anterior del modelo/estudiante
+            notificaciones_completas = EstudianteController.obtener_notificaciones(id_estudiante)
         datos = {
             'tareas_pendientes': Estudiante.obtener_tareas_pendientes(id_estudiante),
             'asistencia': Estudiante.obtener_asistencia(id_estudiante),
             'materias_inscritas': Estudiante.obtener_materias_inscritas(id_estudiante),
             'promedio_general': Estudiante.obtener_promedio_general(id_estudiante),
             'estadisticas': Estudiante.obtener_estadisticas_por_materia(id_estudiante),
-            'notificaciones': EstudianteController.obtener_notificaciones(id_estudiante)
+            # Mostrar únicamente las 5 notificaciones más recientes en el dashboard
+            'notificaciones': (notificaciones_completas or [])[:5]
         }
         return datos
 
@@ -142,7 +150,7 @@ class EstudianteController:
             try:
                 cursor = conexion.cursor(dictionary=True)
                 query = """
-                    SELECT h.dia_semana, h.hora_inicio, h.hora_fin, m.nombre AS materia, p.nombre AS profesor
+                    SELECT h.dia_semana, TIME_FORMAT(h.hora_inicio, '%H:%i') AS hora_inicio, TIME_FORMAT(h.hora_fin, '%H:%i') AS hora_fin, m.nombre AS materia, m.id AS id_materia, p.nombre AS profesor
                     FROM horarios h
                     JOIN materias m ON h.id_materia = m.id
                     LEFT JOIN profesores p ON h.id_profesor = p.id

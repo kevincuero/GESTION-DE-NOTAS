@@ -290,13 +290,18 @@
                 <h3 class="chart-title">Últimas Notificaciones</h3>
                 {% if notificaciones %}
                 <div style="max-height: 250px; overflow-y: auto;">
-                    {% for notif in notificaciones | slice(5) %}
-                    <div style="padding: 12px; border-bottom: 1px solid #e0e0e0; margin-bottom: 8px;">
-                        <p style="font-weight: 600; margin: 0 0 5px 0; color: #2d3142;">{{ notif.titulo }}</p>
-                        <p style="margin: 0; color: #666; font-size: 13px;">{{ notif.mensaje }}</p>
-                        <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">{{ notif.fecha }}</p>
-                    </div>
+                    {% for notif in notificaciones[:5] %}
+                    <a href="{{ url_for('notificaciones_estudiante') }}?open={{ notif.id }}" style="text-decoration: none; color: inherit;">
+                        <div style="padding: 12px; border-bottom: 1px solid #e0e0e0; margin-bottom: 8px;">
+                            <p style="font-weight: 600; margin: 0 0 5px 0; color: #2d3142;">{{ notif.titulo }}{% if notif.leida == 0 %} <span style="color:#ff6b6b;font-weight:600;">NUEVO</span>{% endif %}</p>
+                            <p style="margin: 0; color: #666; font-size: 13px;">{{ notif.mensaje }}</p>
+                            <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">{{ notif.fecha }}</p>
+                        </div>
+                    </a>
                     {% endfor %}
+                </div>
+                <div style="text-align: right; margin-top: 8px;">
+                    <a href="{{ url_for('notificaciones_estudiante') }}" style="color: #4facfe; font-weight: 600; text-decoration: none;">Ver todas</a>
                 </div>
                 {% else %}
                 <p style="text-align: center; color: #999; padding: 20px;">No hay notificaciones</p>

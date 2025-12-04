@@ -124,7 +124,7 @@
         /* Weekly View */
         .weekly-schedule {
             display: grid;
-            grid-template-columns: 60px repeat(5, 1fr);
+            grid-template-columns: 60px repeat(7, 1fr);
             border: 1px solid #e0e0e0;
         }
 
@@ -578,10 +578,12 @@
                         <div class="day-header">Miércoles</div>
                         <div class="day-header">Jueves</div>
                         <div class="day-header">Viernes</div>
+                        <div class="day-header">Sábado</div>
+                        <div class="day-header">Domingo</div>
 
                         {% for hora in ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'] %}
                         <div class="time-cell">{{ hora }}</div>
-                        {% for dia in ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] %}
+                        {% for dia in ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
                         <div class="schedule-cell" data-dia="{{ dia }}" data-hora="{{ hora }}">
                             <!-- Los eventos personales se cargarán aquí con JavaScript -->
                         </div>
@@ -598,7 +600,7 @@
                     </div>
 
                     <div class="schedule-list">
-                        {% set dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] %}
+                        {% set dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
                         {% for dia in dias %}
                             <div class="schedule-day">
                                 <div class="day-title">📅 {{ dia }}</div>
@@ -881,7 +883,7 @@
 
             // Mapar eventos a la vista semanal y a la vista por día
             eventos.forEach(evento => {
-                const fecha = new Date(evento.fecha);
+                const fecha = new Date(evento.fecha + 'T00:00');
                 const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][fecha.getDay()];
                 const horaInicio = evento.hora_inicio ? evento.hora_inicio.substring(0,5) : '';
                 const horaFin = evento.hora_fin ? evento.hora_fin.substring(0,5) : '';
@@ -914,7 +916,7 @@
                 }
 
                 // 2) Agregar también en la vista por día (lista)
-                const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                 dias.forEach((dia, idx) => {
                     if (diaSemana === dia) {
                         const daysContainers = document.querySelectorAll('.day-classes');
@@ -1003,7 +1005,7 @@
             
             eventos.forEach(evento => {
                 // Obtener el día de la semana de la fecha del evento
-                const fecha = new Date(evento.fecha);
+                const fecha = new Date(evento.fecha + 'T00:00');
                 const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][fecha.getDay()];
                 const horaInicio = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '';
                 

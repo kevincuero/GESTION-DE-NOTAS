@@ -1,0 +1,77 @@
+{% extends 'profesor/base.html' %}
+
+{% block title %}Agregar Tarea - Profesor{% endblock %}
+
+{% block main_content %}
+    <div class="content-header">
+        <h1><i class="fas fa-tasks"></i> Agregar Tarea</h1>
+        <p class="subtitle">Crea una tarea para una materia asignada: selecciona materia, tipo, fecha y hora de entrega.</p>
+    </div>
+
+    <div class="edit-container">
+        <div class="edit-form-card">
+            <form method="post" action="{{ url_for('agregar_tarea') }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="id_materia"><i class="fas fa-book"></i> Materia *</label>
+                    <select name="id_materia" id="id_materia" required>
+                        <option value="">-- Selecciona una materia --</option>
+                        {% for m in materias %}
+                        <option value="{{ m.id }}">{{ m.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_tarea"><i class="fas fa-list"></i> Tipo de tarea *</label>
+                    <select name="tipo_tarea" id="tipo_tarea" required>
+                        <option value="tarea">Tarea</option>
+                        <option value="quiz">Quiz</option>
+                        <option value="proyecto">Proyecto</option>
+                        <option value="laboratorio">Laboratorio</option>
+                        <option value="lectura">Lectura dirigida</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="titulo"><i class="fas fa-heading"></i> Título *</label>
+                    <input type="text" id="titulo" name="titulo" required placeholder="Ej: Entrega Sprint 2" />
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion"><i class="fas fa-align-left"></i> Descripción (opcional)</label>
+                    <textarea id="descripcion" name="descripcion" rows="4" placeholder="Indicaciones para la actividad..."></textarea>
+                </div>
+
+                <div class="form-row" style="display:flex; gap:0.8rem;">
+                    <div class="form-group" style="flex:1;">
+                        <label for="fecha_entrega"><i class="fas fa-calendar-alt"></i> Fecha de entrega *</label>
+                        <input type="date" id="fecha_entrega" name="fecha_entrega" required />
+                    </div>
+                    <div class="form-group" style="width:140px;">
+                        <label for="hora_entrega"><i class="fas fa-clock"></i> Hora *</label>
+                        <input type="time" id="hora_entrega" name="hora_entrega" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="archivo"><i class="fas fa-file"></i> Archivo adjunto (opcional)</label>
+                    <input type="file" id="archivo" name="archivo" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.mp4,.png,.jpg,.jpeg" class="file-input">
+                    <small class="input-hint">Adjunta material de apoyo para la tarea (opcional).</small>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-submit" type="submit"><i class="fas fa-plus-circle"></i> Crear tarea</button>
+                    <a class="btn btn-secondary" href="{{ url_for('profesor_contenidos') }}">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+    .edit-container { padding: 1rem 0; }
+    .edit-form-card { background: #fff; padding: 1.25rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); max-width: 820px; }
+    .form-row .form-group { margin: 0; }
+    .form-actions { display:flex; gap:0.75rem; margin-top:1rem; }
+    </style>
+
+{% endblock %}

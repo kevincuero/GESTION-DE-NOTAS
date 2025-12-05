@@ -27,6 +27,7 @@
                 <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
                 <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
                 <a href="{{ url_for('profesor_contenidos') }}" class="{% if 'contenidos' in request.path %}active{% endif %}"><i class="fas fa-file-upload"></i> Contenidos</a>
+                <a href="{{ url_for('agregar_tarea') }}" class="{% if 'tareas' in request.path %}active{% endif %}"><i class="fas fa-plus-circle"></i> Agregar Tarea</a>
             </nav>
 
             <a href="/logout" class="btn-logout">

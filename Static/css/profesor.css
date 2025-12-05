@@ -460,6 +460,10 @@ input {
     box-sizing: border-box;
 }
 
+/* Center edit/add forms within the content area */
+.edit-container { display: flex; justify-content: center; }
+.edit-form-card { width: 100%; max-width: 820px; }
+
 textarea {
     width: 100%;
     padding: 0.8rem;

@@ -330,3 +330,53 @@ class EstudianteController:
         else:
             flash("Error al conectar con la base de datos.", "error")
             return redirect(url_for('estudiante_dashboard'))
+
+    @staticmethod
+    def obtener_tareas_inscritas(id_estudiante, id_materia=None):
+        """Obtiene tareas de las materias en las que está inscrito el estudiante.
+        Retorna información: id, id_materia, nombre_materia, titulo, descripcion, tipo_tarea,
+        fecha_entrega, id_profesor, nombre_profesor, filename, ruta."""
+        conexion = create_connection()
+        if not conexion:
+            return []
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            if id_materia:
+                query = """
+                SELECT tm.id, tm.id_materia, m.nombre AS nombre_materia, tm.titulo, tm.descripcion,
+                       tm.tipo_tarea, tm.fecha_entrega, tm.id_profesor, p.nombre AS nombre_profesor,
+                       tm.filename, tm.ruta
+                FROM tareas_materia tm
+                JOIN materias m ON tm.id_materia = m.id
+                JOIN profesores p ON tm.id_profesor = p.id
+                JOIN inscripciones i ON tm.id_materia = i.id_materia
+                WHERE i.id_estudiante = %s AND tm.id_materia = %s
+                ORDER BY tm.fecha_entrega ASC
+                """
+                cursor.execute(query, (id_estudiante, id_materia))
+            else:
+                query = """
+                SELECT tm.id, tm.id_materia, m.nombre AS nombre_materia, tm.titulo, tm.descripcion,
+                       tm.tipo_tarea, tm.fecha_entrega, tm.id_profesor, p.nombre AS nombre_profesor,
+                       tm.filename, tm.ruta
+                FROM tareas_materia tm
+                JOIN materias m ON tm.id_materia = m.id
+                JOIN profesores p ON tm.id_profesor = p.id
+                JOIN inscripciones i ON tm.id_materia = i.id_materia
+                WHERE i.id_estudiante = %s
+                ORDER BY tm.fecha_entrega ASC
+                """
+                cursor.execute(query, (id_estudiante,))
+            return cursor.fetchall()
+        except Exception as e:
+            print(f"Error al obtener tareas del estudiante: {e}")
+            return []
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass

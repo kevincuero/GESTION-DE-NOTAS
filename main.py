@@ -1,3 +1,6 @@
+
+"""MOVED: rutas editar/eliminar entregas - colocadas más abajo tras la inicialización de `app`"""
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -23,6 +26,140 @@ import time
 
 app = Flask(__name__, template_folder='Views', static_folder='Static')
 app.secret_key = 'clave_secreta_gestion_estudiantil_2023'
+
+# Rutas para editar/eliminar entregas (movidas aquí para asegurar que `app` exista)
+@app.route('/estudiante/editar_entrega', methods=['POST'])
+def editar_entrega():
+    """Permite a estudiantes editar sus entregas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    id_estudiante = session['usuario']['id']
+    id_tarea = request.form.get('id_tarea')
+    
+    if not id_tarea:
+        return jsonify({'success': False, 'message': 'ID de tarea no especificado'}), 400
+    
+    try:
+        conexion = create_connection()
+        if conexion:
+            cursor = conexion.cursor(dictionary=True)
+            
+            # Verificar que existe la entrega del estudiante
+            query = """
+            SELECT id, ruta FROM entregas_tareas
+            WHERE id_estudiante = %s AND id_tarea_materia = %s
+            """
+            cursor.execute(query, (id_estudiante, id_tarea))
+            entrega = cursor.fetchone()
+            
+            if not entrega:
+                cursor.close()
+                conexion.close()
+                return jsonify({'success': False, 'message': 'Entrega no encontrada'}), 404
+            
+            # Si hay nuevo archivo, actualizar
+            if 'archivo' in request.files and request.files['archivo'].filename != '':
+                archivo = request.files['archivo']
+                
+                if not allowed_content_file(archivo.filename):
+                    cursor.close()
+                    conexion.close()
+                    return jsonify({'success': False, 'message': 'Tipo de archivo no permitido'}), 400
+                
+                # Eliminar archivo anterior
+                old_path = os.path.join(CONTENT_UPLOAD_FOLDER, entrega['ruta'].replace('uploads/contenidos/', ''))
+                if os.path.exists(old_path):
+                    try:
+                        os.remove(old_path)
+                    except:
+                        pass
+                
+                # Guardar nuevo archivo
+                filename = secure_filename(f"{id_estudiante}_{id_tarea}_{int(time.time())}_{archivo.filename}")
+                carpeta_entregas = os.path.join(CONTENT_UPLOAD_FOLDER, 'entregas', str(id_tarea))
+                os.makedirs(carpeta_entregas, exist_ok=True)
+                ruta_absoluta = os.path.join(carpeta_entregas, filename)
+                
+                archivo.save(ruta_absoluta)
+                ruta_relativa = os.path.join('uploads', 'contenidos', 'entregas', str(id_tarea), filename).replace('\\', '/')
+                
+                # Actualizar BD
+                cursor.execute(
+                    """
+                    UPDATE entregas_tareas 
+                    SET filename=%s, ruta=%s, mimetype=%s, fecha_entrega=NOW()
+                    WHERE id_estudiante=%s AND id_tarea_materia=%s
+                    """,
+                    (filename, ruta_relativa, archivo.mimetype, id_estudiante, id_tarea)
+                )
+            
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return jsonify({'success': True, 'message': 'Entrega actualizada correctamente'})
+        else:
+            return jsonify({'success': False, 'message': 'Error de conexión'}), 500
+    except Exception as e:
+        app.logger.error(f"Error al editar entrega: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@app.route('/estudiante/eliminar_entrega', methods=['POST'])
+def eliminar_entrega():
+    """Permite a estudiantes eliminar sus entregas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    id_estudiante = session['usuario']['id']
+    data = request.get_json()
+    id_tarea = data.get('id_tarea')
+    
+    if not id_tarea:
+        return jsonify({'success': False, 'message': 'ID de tarea no especificado'}), 400
+    
+    try:
+        conexion = create_connection()
+        if conexion:
+            cursor = conexion.cursor(dictionary=True)
+            
+            # Obtener información de la entrega
+            query = """
+            SELECT id, ruta FROM entregas_tareas
+            WHERE id_estudiante = %s AND id_tarea_materia = %s
+            """
+            cursor.execute(query, (id_estudiante, id_tarea))
+            entrega = cursor.fetchone()
+            
+            if not entrega:
+                cursor.close()
+                conexion.close()
+                return jsonify({'success': False, 'message': 'Entrega no encontrada'}), 404
+            
+            # Eliminar archivo
+            file_path = os.path.join(CONTENT_UPLOAD_FOLDER, entrega['ruta'].replace('uploads/contenidos/', ''))
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+            
+            # Eliminar de BD
+            cursor.execute(
+                "DELETE FROM entregas_tareas WHERE id_estudiante=%s AND id_tarea_materia=%s",
+                (id_estudiante, id_tarea)
+            )
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            
+            return jsonify({'success': True, 'message': 'Entrega eliminada correctamente'})
+        else:
+            return jsonify({'success': False, 'message': 'Error de conexión'}), 500
+    except Exception as e:
+        app.logger.error(f"Error al eliminar entrega: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
 
 # OAuth (Google) - intenta habilitar sólo si `authlib` está instalada y las credenciales están configuradas.
 # OAuth (Google) - intenta habilitar sólo si `authlib` está instalada y las credenciales están configuradas.
@@ -788,6 +925,95 @@ def profesor_contenidos():
     materias = ProfesorController.obtener_materias_asignadas(id_profesor)
     contenidos = ProfesorController.listar_contenidos_por_profesor_materia(id_profesor=id_profesor)
     return render_template('profesor/contenidos.html', materias=materias, contenidos=contenidos, usuario=session['usuario'])
+
+
+@app.route('/profesor/tareas/agregar', methods=['GET', 'POST'])
+def agregar_tarea():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    materias = ProfesorController.obtener_materias_asignadas(id_profesor)
+
+    if request.method == 'POST':
+        id_materia = request.form.get('id_materia')
+        tipo_tarea = request.form.get('tipo_tarea')
+        titulo = request.form.get('titulo')
+        descripcion = request.form.get('descripcion')
+        fecha_entrega = request.form.get('fecha_entrega')
+        hora_entrega = request.form.get('hora_entrega')
+
+        if not id_materia or not tipo_tarea or not titulo or not fecha_entrega or not hora_entrega:
+            flash('Por favor completa todos los campos requeridos.', 'error')
+            return redirect(url_for('agregar_tarea'))
+
+        # Combinar fecha y hora
+        fecha_entrega_dt = None
+        try:
+            fecha_entrega_dt = f"{fecha_entrega} {hora_entrega}:00"
+        except Exception:
+            fecha_entrega_dt = f"{fecha_entrega} 00:00:00"
+
+        # Procesar archivo opcional
+        archivo = None
+        filename = None
+        mimetype = None
+        ruta_relativa = None
+        if 'archivo' in request.files:
+            archivo = request.files['archivo']
+            if archivo and archivo.filename != '':
+                if allowed_content_file(archivo.filename):
+                    filename = secure_filename(f"{id_profesor}_{int(time.time())}_{archivo.filename}")
+                    carpeta_profesor = os.path.join(CONTENT_UPLOAD_FOLDER, str(id_profesor))
+                    os.makedirs(carpeta_profesor, exist_ok=True)
+                    ruta_absoluta = os.path.join(carpeta_profesor, filename)
+                    try:
+                        archivo.save(ruta_absoluta)
+                        ruta_relativa = os.path.join('uploads', 'contenidos', str(id_profesor), filename).replace('\\','/')
+                        mimetype = archivo.mimetype
+                    except Exception as e:
+                        app.logger.error(f"Error guardando archivo de tarea: {e}")
+                        flash('Error al guardar archivo adjunto.', 'error')
+                        return redirect(url_for('agregar_tarea'))
+                else:
+                    flash('Tipo de archivo no permitido.', 'error')
+                    return redirect(url_for('agregar_tarea'))
+
+        # Guardar en la BD: tabla tareas_materia (se asume que la tabla existe, ver SQL recomendado)
+        conexion = create_connection()
+        if conexion:
+            try:
+                cursor = conexion.cursor()
+                cursor.execute(
+                    """
+                    INSERT INTO tareas_materia (id_profesor, id_materia, titulo, descripcion, tipo_tarea, fecha_entrega, filename, mimetype, ruta, creado_en)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    """,
+                    (id_profesor, id_materia, titulo, descripcion, tipo_tarea, fecha_entrega_dt, filename, mimetype, ruta_relativa)
+                )
+                conexion.commit()
+                flash('Tarea creada correctamente.', 'success')
+            except Exception as e:
+                app.logger.error(f"Error al crear tarea en BD: {e}")
+                try:
+                    conexion.rollback()
+                except Exception:
+                    pass
+                flash('Ocurrió un error al crear la tarea.', 'error')
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+                try:
+                    conexion.close()
+                except Exception:
+                    pass
+
+        return redirect(url_for('profesor_contenidos'))
+
+    return render_template('profesor/agregar_tarea.html', materias=materias, usuario=session['usuario'])
 
 
 @app.route('/profesor/contenidos/upload', methods=['POST'])
@@ -1783,6 +2009,160 @@ def descargar_contenido_estudiante(id_contenido):
         flash("Ocurrió un error al descargar el archivo.", "error")
         return redirect(url_for('ver_contenidos_estudiante'))
 
+@app.route('/estudiante/tareas', methods=['GET', 'POST'])
+def tareas_estudiante():
+    """Vista para que estudiantes vean tareas de sus materias inscritas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+    
+    id_estudiante = session['usuario']['id']
+    id_materia = None
+    
+    try:
+        # Obtener tareas (filtrar por materia si se selecciona)
+        if request.method == 'POST':
+            id_materia = request.form.get('id_materia')
+            if id_materia:
+                try:
+                    id_materia = int(id_materia)
+                except (ValueError, TypeError):
+                    id_materia = None
+        
+        tareas = EstudianteController.obtener_tareas_inscritas(id_estudiante, id_materia)
+        
+        return render_template(
+            'estudiante/tareas.html',
+            usuario=session['usuario'],
+            tareas=tareas,
+            id_materia_actual=id_materia
+        )
+    except Exception as e:
+        tb = traceback.format_exc()
+        app.logger.error(f"Error al cargar tareas: {e}\n{tb}")
+        flash("Ocurrió un error al cargar tus tareas.", "error")
+        return redirect(url_for('estudiante_dashboard'))
+
+@app.route('/estudiante/descargar_tarea/<int:id_tarea>')
+def descargar_tarea_material(id_tarea):
+    """Permite a estudiantes descargar material adjunto de una tarea."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        flash("No autorizado.", "error")
+        return redirect(url_for('home'))
+    
+    id_estudiante = session['usuario']['id']
+    
+    try:
+        conexion = create_connection()
+        if conexion:
+            cursor = conexion.cursor(dictionary=True)
+            # Verificar que la tarea pertenece a una materia inscrita del estudiante
+            query = """
+            SELECT tm.* FROM tareas_materia tm
+            JOIN inscripciones i ON tm.id_materia = i.id_materia
+            WHERE tm.id = %s AND i.id_estudiante = %s
+            """
+            cursor.execute(query, (id_tarea, id_estudiante))
+            tarea = cursor.fetchone()
+            cursor.close()
+            conexion.close()
+            
+            if not tarea or not tarea['ruta']:
+                flash("Material no encontrado o sin permisos.", "error")
+                return redirect(url_for('tareas_estudiante'))
+            
+            # Construir ruta del archivo
+            file_path = os.path.join(app.root_path, 'Static', tarea['ruta'])
+            
+            if os.path.exists(file_path):
+                return send_file(file_path, as_attachment=True, download_name=tarea['filename'])
+            else:
+                flash("El archivo no se encuentra en el servidor.", "error")
+                return redirect(url_for('tareas_estudiante'))
+        else:
+            flash("Error al conectar a la base de datos.", "error")
+            return redirect(url_for('tareas_estudiante'))
+    except Exception as e:
+        app.logger.error(f"Error al descargar material de tarea: {e}")
+        flash("Ocurrió un error al descargar el archivo.", "error")
+        return redirect(url_for('tareas_estudiante'))
+
+@app.route('/estudiante/subir_entrega', methods=['POST'])
+def subir_entrega():
+    """Permite a estudiantes subir entregas para tareas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    id_estudiante = session['usuario']['id']
+    id_tarea = request.form.get('id_tarea')
+    
+    if not id_tarea:
+        return jsonify({'success': False, 'message': 'ID de tarea no especificado'}), 400
+    
+    try:
+        # Verificar que la tarea existe y pertenece a una materia inscrita
+        conexion = create_connection()
+        if conexion:
+            cursor = conexion.cursor(dictionary=True)
+            query = """
+            SELECT tm.id FROM tareas_materia tm
+            JOIN inscripciones i ON tm.id_materia = i.id_materia
+            WHERE tm.id = %s AND i.id_estudiante = %s
+            """
+            cursor.execute(query, (id_tarea, id_estudiante))
+            existe = cursor.fetchone()
+            
+            if not existe:
+                cursor.close()
+                conexion.close()
+                return jsonify({'success': False, 'message': 'Tarea no encontrada o sin permisos'}), 403
+            
+            # Procesar archivo de entrega
+            if 'archivo' not in request.files:
+                cursor.close()
+                conexion.close()
+                return jsonify({'success': False, 'message': 'No se envió archivo'}), 400
+            
+            archivo = request.files['archivo']
+            if archivo.filename == '':
+                cursor.close()
+                conexion.close()
+                return jsonify({'success': False, 'message': 'Archivo vacío'}), 400
+            
+            if not allowed_content_file(archivo.filename):
+                cursor.close()
+                conexion.close()
+                return jsonify({'success': False, 'message': 'Tipo de archivo no permitido'}), 400
+            
+            # Guardar archivo
+            filename = secure_filename(f"{id_estudiante}_{id_tarea}_{int(time.time())}_{archivo.filename}")
+            carpeta_entregas = os.path.join(CONTENT_UPLOAD_FOLDER, 'entregas', str(id_tarea))
+            os.makedirs(carpeta_entregas, exist_ok=True)
+            ruta_absoluta = os.path.join(carpeta_entregas, filename)
+            
+            archivo.save(ruta_absoluta)
+            ruta_relativa = os.path.join('uploads', 'contenidos', 'entregas', str(id_tarea), filename).replace('\\', '/')
+            
+            # Guardar en BD (tabla entregas_tareas)
+            cursor.execute(
+                """
+                INSERT INTO entregas_tareas (id_estudiante, id_tarea_materia, filename, ruta, mimetype, fecha_entrega)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                ON DUPLICATE KEY UPDATE filename=%s, ruta=%s, mimetype=%s, fecha_entrega=NOW()
+                """,
+                (id_estudiante, id_tarea, filename, ruta_relativa, archivo.mimetype, filename, ruta_relativa, archivo.mimetype)
+            )
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            
+            return jsonify({'success': True, 'message': 'Entrega enviada correctamente'})
+        else:
+            return jsonify({'success': False, 'message': 'Error de conexión'}), 500
+    except Exception as e:
+        app.logger.error(f"Error al subir entrega: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
 @app.route('/estudiante/notificaciones')
 def notificaciones_estudiante():
     if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
@@ -1898,22 +2278,6 @@ def api_enviar_mensaje():
     except Exception as e:
         app.logger.error(f"Error al enviar mensaje: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
-
-
-# Ruta: Mis Tareas (nueva)
-@app.route('/estudiante/tareas')
-def tareas_estudiante():
-    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
-        flash("No tienes permisos para acceder a esta sección.", "error")
-        return redirect(url_for('home'))
-    id_estudiante = session['usuario']['id']
-    try:
-        tareas = EstudianteController.obtener_tareas_detalle(id_estudiante)
-        return render_template('estudiante/mis_tareas.html', usuario=session['usuario'], tareas=tareas)
-    except Exception as e:
-        app.logger.error(f"Error al cargar Tareas: {e}")
-        flash("Ocurrió un error al cargar tus tareas.", "error")
-        return redirect(url_for('estudiante_dashboard'))
 
 
 # Ajustar ruta existente de horario para usar la plantilla nueva `mi_horario.html`

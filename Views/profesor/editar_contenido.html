@@ -1,0 +1,68 @@
+{% extends 'profesor/base.html' %}
+
+{% block title %}Editar Contenido - Profesor{% endblock %}
+
+{% block main_content %}
+    <div class="content-header">
+        <h1>
+            <i class="fas fa-edit"></i>
+            Editar Contenido
+        </h1>
+        <p class="subtitle">Modifica el título, materia, descripción o reemplaza el archivo subido.</p>
+    </div>
+
+    <div class="edit-container">
+        <div class="edit-form-card">
+            <form method="post" action="{{ url_for('editar_contenido', id=contenido.id) }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="id_materia"><i class="fas fa-book"></i> Materia *</label>
+                    <select name="id_materia" id="id_materia" required>
+                        <option value="">-- Selecciona una materia --</option>
+                        {% for m in materias %}
+                        <option value="{{ m.id }}" {% if contenido.id_materia == m.id %}selected{% endif %}>{{ m.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="titulo"><i class="fas fa-heading"></i> Título *</label>
+                    <input type="text" id="titulo" name="titulo" required value="{{ contenido.titulo }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion"><i class="fas fa-align-left"></i> Descripción (opcional)</label>
+                    <textarea id="descripcion" name="descripcion" rows="3">{{ contenido.descripcion }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Archivo actual</label>
+                    <div class="current-file">
+                        <i class="fas fa-file"></i>
+                        <span>{{ contenido.filename }}</span>
+                        <a class="btn btn-download small" href="{{ url_for('descargar_contenido', id=contenido.id) }}">Descargar</a>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="archivo_nuevo"><i class="fas fa-file-upload"></i> Reemplazar archivo (opcional)</label>
+                    <input type="file" id="archivo_nuevo" name="archivo_nuevo" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.mp4,.png,.jpg,.jpeg" class="file-input">
+                    <small class="input-hint">Si seleccionas un archivo, el antiguo será reemplazado.</small>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-submit" type="submit"><i class="fas fa-save"></i> Guardar cambios</button>
+                    <a class="btn btn-secondary" href="{{ url_for('profesor_contenidos') }}">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+    .edit-container { padding: 1rem 0; }
+    .edit-form-card { background: #fff; padding: 1.25rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); max-width: 800px; }
+    .current-file { display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem; }
+    .form-actions { display:flex; gap:0.75rem; margin-top:1rem; }
+    .btn.small { padding:0.35rem 0.6rem; font-size:0.9rem; }
+    </style>
+
+{% endblock %}

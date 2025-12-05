@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Contenidos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estudiante.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos para la vista de contenidos */
+        .contenidos-header { margin-bottom: 20px; color: #2d3142; }
+        
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            min-width: 220px;
+            font-size: 0.95rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
+        }
+        
+        .filter-label {
+            font-weight: 500;
+            color: #555;
+            font-size: 0.95rem;
+        }
+        
+        /* Contenedor de cards */
+        .contenidos-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+        
+        .contenido-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            padding: 18px;
+            border-left: 4px solid #4361ee;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .contenido-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+        
+        .contenido-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .contenido-icon {
+            font-size: 1.5rem;
+            color: #4361ee;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .contenido-titulo {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3142;
+            word-break: break-word;
+            margin: 0;
+        }
+        
+        .contenido-meta {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 4px;
+        }
+        
+        .contenido-tipo {
+            display: inline-block;
+            background: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 8px;
+            text-transform: capitalize;
+        }
+        
+        .contenido-descripcion {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 10px 0;
+            line-height: 1.4;
+        }
+        
+        .contenido-info {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .info-item i {
+            color: #4361ee;
+            font-size: 0.9rem;
+        }
+        
+        .contenido-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .btn-descargar, .btn-preview {
+            flex: 1;
+            padding: 10px 14px;
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+        
+        .btn-descargar:hover, .btn-preview:hover {
+            background: #3753d1;
+        }
+        
+        .btn-preview {
+            background: #6c757d;
+        }
+        
+        .btn-preview:hover {
+            background: #5a6268;
+        }
+        
+        /* Modal de vista previa */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            overflow: auto;
+        }
+        
+        .preview-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-modal-content {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            max-height: 90vh;
+            width: 900px;
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .preview-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3142;
+            margin: 0;
+        }
+        
+        .preview-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        
+        .preview-close:hover {
+            color: #333;
+        }
+        
+        .preview-body {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+        
+        .preview-container {
+            width: 100%;
+            height: 100%;
+            max-height: calc(90vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-pdf {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .preview-unsupported {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .preview-unsupported-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+        
+        .preview-unsupported-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        
+        .preview-unsupported-subtext {
+            font-size: 0.9rem;
+            color: #999;
+        }
+        
+        .preview-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #eee;
+            background: #f8f9fa;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn-preview-download {
+            padding: 8px 16px;
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-preview-download:hover {
+            background: #3753d1;
+        }
+        
+        /* Estados vacíos */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+        
+        .empty-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .empty-subtext {
+            font-size: 0.95rem;
+            color: #999;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .contenidos-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+            }
+            
+            .filter-select, .filter-label {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    {% set active_page = 'contenidos' %}
+    {% include 'estudiante/_sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <h1 class="contenidos-header">Contenidos Educativos</h1>
+
+        <!-- Filtro por materia -->
+        <div class="filter-section">
+            <label class="filter-label">Filtrar por materia:</label>
+            <form method="POST" id="filterForm" style="display: flex; gap: 10px; align-items: center; flex: 1; flex-wrap: wrap;">
+                <select name="id_materia" id="materiaSelect" class="filter-select">
+                    <option value="">-- Todas tus materias inscritas --</option>
+                    {% for materia in materias %}
+                        <option value="{{ materia.id }}" {% if id_materia_actual == materia.id %}selected{% endif %}>
+                            {{ materia.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-filter" style="padding: 10px 16px; background: #4361ee; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s;">
+                    Filtrar
+                </button>
+            </form>
+        </div>
+
+        <!-- Cards de Contenidos -->
+        <div class="contenidos-container" id="contenidosContainer">
+            {% if contenidos %}
+                {% for contenido in contenidos %}
+                <article class="contenido-card">
+                    <div class="contenido-header">
+                        {% if contenido.tipo == 'video' %}
+                            <div class="contenido-icon"><i class="fas fa-video"></i></div>
+                        {% elif contenido.tipo == 'pdf' or contenido.tipo == 'archivo' %}
+                            <div class="contenido-icon"><i class="fas fa-file-pdf"></i></div>
+                        {% elif contenido.tipo == 'enlace' %}
+                            <div class="contenido-icon"><i class="fas fa-link"></i></div>
+                        {% else %}
+                            <div class="contenido-icon"><i class="fas fa-file-alt"></i></div>
+                        {% endif %}
+                        <h3 class="contenido-titulo">{{ contenido.titulo }}</h3>
+                    </div>
+                    
+                    {% if contenido.descripcion %}
+                    <p class="contenido-descripcion">{{ contenido.descripcion }}</p>
+                    {% endif %}
+                    
+                    <span class="contenido-tipo">{{ contenido.tipo }}</span>
+                    
+                    <div class="contenido-info">
+                        <div class="info-item">
+                            <i class="fas fa-book"></i>
+                            {{ contenido.nombre_materia }}
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ contenido.fecha_subida.strftime('%d/%m/%Y') if contenido.fecha_subida else 'N/A' }}
+                        </div>
+                        {% if contenido.tamano %}
+                        <div class="info-item">
+                            <i class="fas fa-weight"></i>
+                            {% set size_kb = (contenido.tamano / 1024)|int %}
+                            {% if size_kb > 1024 %}
+                                {{ "%.1f" | format(size_kb / 1024) }} MB
+                            {% else %}
+                                {{ size_kb }} KB
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="contenido-footer">
+                        <button class="btn-preview" data-contenido-id="{{ contenido.id }}" data-contenido-titulo="{{ contenido.titulo }}" data-contenido-tipo="{{ contenido.tipo }}" data-contenido-ruta="{{ contenido.ruta }}">
+                            <i class="fas fa-eye"></i>
+                            Vista Previa
+                        </button>
+                        <a href="{{ url_for('descargar_contenido_estudiante', id_contenido=contenido.id) }}" class="btn-descargar">
+                            <i class="fas fa-download"></i>
+                            Descargar
+                        </a>
+                    </div>
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <p class="empty-text">No hay contenidos disponibles</p>
+                    <p class="empty-subtext">
+                        {% if id_materia_actual %}
+                            Tu profesor aún no ha subido contenido en esta materia.
+                        {% else %}
+                            Tus profesores aún no han subido contenido.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal de Vista Previa -->
+    <div id="previewModal" class="preview-modal">
+        <div class="preview-modal-content">
+            <div class="preview-header">
+                <h2 class="preview-title" id="previewTitle">Vista Previa</h2>
+                <button class="preview-close" onclick="cerrarPreview()">&times;</button>
+            </div>
+            <div class="preview-body">
+                <div class="preview-container" id="previewContainer">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="preview-footer">
+                <a id="downloadLink" href="#" class="btn-preview-download">
+                    <i class="fas fa-download"></i>
+                    Descargar archivo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const previewModal = document.getElementById('previewModal');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewTitle = document.getElementById('previewTitle');
+        const downloadLink = document.getElementById('downloadLink');
+
+        // Funciones de preview
+        function abrirPreview(id, titulo, tipo, ruta) {
+            previewTitle.textContent = titulo;
+            const staticPath = '{{ url_for("static", filename="") }}';
+            const filePath = staticPath + ruta;
+            
+            previewContainer.innerHTML = '';
+
+            // Determinar tipo de contenido
+            if (tipo.toLowerCase() === 'pdf' || tipo.toLowerCase() === 'archivo' && ruta.endsWith('.pdf')) {
+                // PDF: usar iframe
+                previewContainer.innerHTML = `<iframe src="${filePath}" class="preview-pdf"></iframe>`;
+            } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => ruta.toLowerCase().endsWith('.' + ext))) {
+                // Imagen: usar img
+                previewContainer.innerHTML = `<img src="${filePath}" alt="${titulo}" class="preview-image">`;
+            } else if (tipo.toLowerCase() === 'video' || ['mp4', 'webm', 'ogg'].some(ext => ruta.toLowerCase().endsWith('.' + ext))) {
+                // Video: usar video player
+                previewContainer.innerHTML = `
+                    <video class="preview-image" controls style="max-width: 100%; max-height: 100%;">
+                        <source src="${filePath}" type="video/mp4">
+                        Tu navegador no soporta el reproductor de video.
+                    </video>
+                `;
+            } else {
+                // Otros: mostrar mensaje
+                previewContainer.innerHTML = `
+                    <div class="preview-unsupported">
+                        <div class="preview-unsupported-icon">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <div class="preview-unsupported-text">Tipo de archivo no previewable</div>
+                        <div class="preview-unsupported-subtext">Descarga el archivo para verlo</div>
+                    </div>
+                `;
+            }
+
+            // Actualizar enlace de descarga
+            downloadLink.href = `/estudiante/descargar_contenido/${id}`;
+            
+            // Mostrar modal
+            previewModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cerrarPreview() {
+            previewModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            previewContainer.innerHTML = '';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        previewModal.addEventListener('click', function(event) {
+            if (event.target === previewModal) {
+                cerrarPreview();
+            }
+        });
+
+        // Cerrar con tecla Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && previewModal.classList.contains('active')) {
+                cerrarPreview();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mantener el enlace de sidebar activo
+            const sidebar = document.querySelector('.sidebar-link[href*="contenidos"]');
+            if (sidebar) sidebar.classList.add('active');
+
+            // Agregar event listeners a botones de preview
+            document.querySelectorAll('.btn-preview').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.contenidoId;
+                    const titulo = this.dataset.contenidoTitulo;
+                    const tipo = this.dataset.contenidoTipo;
+                    const ruta = this.dataset.contenidoRuta;
+                    abrirPreview(id, titulo, tipo, ruta);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,62 +1,36 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Profesor</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/profesor.css') }}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% extends 'profesor/base.html' %}
+
+{% block title %}Dashboard - Profesor{% endblock %}
+
+{% block extra_head %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-<div class="main-layout">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="logo">
-      <i class="fas fa-chalkboard-teacher"></i>
-      Profesor
-    </div>
-    <nav>
-      <a href="{{ url_for('profesor_dashboard') }}" class="{% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-home"></i> Dashboard</a>
-      <a href="/profesor/obtener_estudiantes" class="{% if 'obtener_estudiantes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Obtener Estudiantes</a>
-      <a href="/profesor/asignar_nota" class="{% if 'asignar_nota' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Asignar Nota</a>
-      <a href="/profesor/cambiar_nota" class="{% if 'cambiar_nota' in request.path %}active{% endif %}"><i class="fas fa-sync-alt"></i> Cambiar Nota</a>
-      <a href="/profesor/enviar_notificacion" class="{% if 'enviar_notificacion' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Notificar</a>
-      <a href="{{ url_for('indices') }}" class="{% if 'indices' in request.path %}active{% endif %}"><i class="fas fa-percent"></i> Índices</a>
-      <a href="{{ url_for('profesor_hoja_vida') }}" class="{% if 'hoja_vida' in request.path %}active{% endif %}"><i class="fas fa-file-alt"></i> Hoja de vida</a>
-    </nav>
-    <a href="/logout" class="btn-logout">
-      <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-    </a>
-  </aside>
+{% endblock %}
 
-  <!-- Main Content -->
-  <main class="content">
-    <div class="dashboard-header">
-      <h1 class="welcome-message">Bienvenido, {{ usuario['nombre'] }}</h1>
-    </div>
+{% block main_content %}
+  <div class="dashboard-header">
+    <h1 class="welcome-message">Bienvenido, {{ usuario['nombre'] }}</h1>
+  </div>
 
-    <!-- Gráficos -->
-    <div class="charts-section">
-      <div class="chart-card">
-        <h3>Estudiantes por materia (Barras)</h3>
-        <canvas id="barChart"></canvas>
-      </div>
-      <div class="chart-card">
-        <h3>Promedio de notas por materia (Pastel)</h3>
-        <canvas id="pieChart"></canvas>
-      </div>
-      <div class="chart-card">
-        <h3>Distribución de notas (Líneas)</h3>
-        <canvas id="lineChart"></canvas>
-      </div>
+  <!-- Gráficos -->
+  <div class="charts-section">
+    <div class="chart-card">
+      <h3>Estudiantes por materia (Barras)</h3>
+      <canvas id="barChart"></canvas>
     </div>
-  </main>
-</div>
+    <div class="chart-card">
+      <h3>Promedio de notas por materia (Pastel)</h3>
+      <canvas id="pieChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Distribución de notas (Líneas)</h3>
+      <canvas id="lineChart"></canvas>
+    </div>
+  </div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
-    // Datos pasados desde Flask
+  // Datos pasados desde Flask
     const labels = JSON.parse('{{ labels|tojson|safe }}');
     const dataEstudiantes = JSON.parse('{{ data_estudiantes|tojson|safe }}');
     const dataPromedios = JSON.parse('{{ data_promedios|tojson|safe }}');
@@ -122,6 +96,5 @@
             plugins: { legend: { display: true } }
         }
     });
-</script>
-</body>
-</html>
+  </script>
+  {% endblock %}

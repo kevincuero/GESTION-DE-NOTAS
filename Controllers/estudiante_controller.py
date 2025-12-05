@@ -253,6 +253,49 @@ class EstudianteController:
         return informe
 
     @staticmethod
+    def obtener_contenidos_inscritos(id_estudiante, id_materia=None):
+        """Obtiene los contenidos de las materias inscritas del estudiante, opcionalmente filtrados por materia."""
+        conexion = create_connection()
+        contenidos = []
+        if conexion:
+            try:
+                cursor = conexion.cursor(dictionary=True)
+                if id_materia:
+                    # Filtrar por materia específica
+                    query = """
+                    SELECT c.id, c.titulo, c.descripcion, c.tipo, c.filename, c.ruta, c.fecha_subida, c.tamano,
+                           m.id AS id_materia, m.nombre AS nombre_materia, p.nombre AS nombre_profesor
+                    FROM contenidos_materia c
+                    JOIN materias m ON c.id_materia = m.id
+                    JOIN profesores p ON c.id_profesor = p.id
+                    JOIN inscripciones i ON m.id = i.id_materia
+                    WHERE i.id_estudiante = %s AND m.id = %s
+                    ORDER BY c.fecha_subida DESC
+                    """
+                    cursor.execute(query, (id_estudiante, id_materia))
+                else:
+                    # Traer contenidos de todas las materias inscritas
+                    query = """
+                    SELECT c.id, c.titulo, c.descripcion, c.tipo, c.filename, c.ruta, c.fecha_subida, c.tamano,
+                           m.id AS id_materia, m.nombre AS nombre_materia, p.nombre AS nombre_profesor
+                    FROM contenidos_materia c
+                    JOIN materias m ON c.id_materia = m.id
+                    JOIN profesores p ON c.id_profesor = p.id
+                    JOIN inscripciones i ON m.id = i.id_materia
+                    WHERE i.id_estudiante = %s
+                    ORDER BY m.nombre, c.fecha_subida DESC
+                    """
+                    cursor.execute(query, (id_estudiante,))
+                contenidos = cursor.fetchall()
+            except Error as e:
+                print(f"Error al obtener contenidos inscritos: {e}")
+                contenidos = []
+            finally:
+                cursor.close()
+                conexion.close()
+        return contenidos
+
+    @staticmethod
     def ver_notas():
         """Obtiene las notas del estudiante desde la base de datos."""
         if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':

@@ -1,0 +1,151 @@
+{% extends 'profesor/base.html' %}
+
+{% block title %}Contenidos - Profesor{% endblock %}
+
+{% block main_content %}
+    <!-- Header Section -->
+    <div class="content-header">
+        <h1>
+            <i class="fas fa-book"></i> 
+            Contenidos de Materias
+        </h1>
+        <p class="subtitle">
+            Gestiona los recursos y materiales de tus materias
+        </p>
+    </div>
+
+    <div class="grid-container">
+        <!-- Left Column: Content List -->
+        <section class="content-list">
+            {% if contenidos %}
+                <div class="cards-grid">
+                    {% for c in contenidos %}
+                    <article class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-alt"></i>
+                                {{ c.titulo }}
+                            </h3>
+                            <span class="card-badge">{{ c.tipo }}</span>
+                        </div>
+                        
+                        <div class="card-meta">
+                            <span>
+                                <i class="fas fa-calendar-alt"></i> 
+                                {{ c.fecha_subida }}
+                            </span>
+                            <span>
+                                <i class="fas fa-book-open"></i> 
+                                Materia ID: {{ c.id_materia }}
+                            </span>
+                        </div>
+                        
+                        {% if c.descripcion %}
+                        <p class="card-description">{{ c.descripcion }}</p>
+                        {% endif %}
+                        
+                        <div class="card-actions">
+                            <a class="btn btn-download" href="{{ url_for('descargar_contenido', id=c.id) }}">
+                                <i class="fas fa-download"></i> 
+                                Descargar
+                            </a>
+                            <a class="btn btn-edit" href="{{ url_for('editar_contenido', id=c.id) }}">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </a>
+                            <form method="post" action="{{ url_for('eliminar_contenido', id=c.id) }}" 
+                                  class="delete-form"
+                                  onsubmit="return confirm('¿Estás seguro de eliminar este contenido?');">
+                                <button class="btn btn-delete" type="submit">
+                                    <i class="fas fa-trash-alt"></i> 
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3>No hay contenidos disponibles</h3>
+                    <p>Comienza subiendo tu primer material usando el formulario</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- Right Column: Upload Form -->
+        <aside class="upload-sidebar">
+            <form class="upload-form" 
+                  method="post" 
+                  action="{{ url_for('profesor_subir_contenido') }}" 
+                  enctype="multipart/form-data">
+                
+                <div class="form-header">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Subir Contenido</h3>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_materia">
+                        <i class="fas fa-book"></i> 
+                        Materia *
+                    </label>
+                    <select name="id_materia" id="id_materia" required>
+                        <option value="">-- Selecciona una materia --</option>
+                        {% for m in materias %}
+                        <option value="{{ m.id }}">{{ m.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="titulo">
+                        <i class="fas fa-heading"></i> 
+                        Título del contenido *
+                    </label>
+                    <input type="text" 
+                           id="titulo" 
+                           name="titulo" 
+                           placeholder="Ej: Guía de estudio - Tema 1" 
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">
+                        <i class="fas fa-align-left"></i> 
+                        Descripción (opcional)
+                    </label>
+                    <textarea id="descripcion" 
+                              name="descripcion" 
+                              rows="3" 
+                              placeholder="Describe brevemente el contenido..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="archivo">
+                        <i class="fas fa-file"></i> 
+                        Archivo *
+                    </label>
+                    <input type="file" 
+                           id="archivo" 
+                           name="archivo" 
+                           required 
+                           accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.mp4,.png,.jpg,.jpeg"
+                           class="file-input">
+                    <small class="input-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Formatos: PDF, DOC, DOCX, PPT, PPTX, ZIP, MP4, PNG, JPG
+                    </small>
+                </div>
+
+                <button class="btn btn-submit" type="submit">
+                    <i class="fas fa-upload"></i> 
+                    Subir Contenido
+                </button>
+            </form>
+        </aside>
+    </div>
+{% endblock %}

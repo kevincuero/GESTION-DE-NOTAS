@@ -3,7 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from config_email import EMAIL_HOST, EMAIL_HOST_PASSWORD, EMAIL_PORT, EMAIL_HOST_USER
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask import send_from_directory
@@ -53,13 +53,21 @@ else:
             client_kwargs={'scope': 'openid email profile'}
         )
 
-# Configuración de subida de archivos (hojas de vida)
+# Configuración de subida de archivos (hojas de vida y contenidos)
 ALLOWED_EXTENSIONS = {'pdf'}
 UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads', 'hojas')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Extensión para contenidos de materias (documentos, imágenes, video, presentaciones)
+CONTENT_ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'mp4', 'png', 'jpg', 'jpeg'}
+CONTENT_UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads', 'contenidos')
+os.makedirs(CONTENT_UPLOAD_FOLDER, exist_ok=True)
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_content_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in CONTENT_ALLOWED_EXTENSIONS
 
 def get_db_connection():
     conn = sqlite3.connect('tu_base_de_datos.db')
@@ -770,6 +778,209 @@ def profesor_hoja_vida():
     return render_template('profesor/HojadeVida.html', hoja=hoja, usuario=session['usuario'])
 
 
+@app.route('/profesor/contenidos')
+def profesor_contenidos():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    materias = ProfesorController.obtener_materias_asignadas(id_profesor)
+    contenidos = ProfesorController.listar_contenidos_por_profesor_materia(id_profesor=id_profesor)
+    return render_template('profesor/contenidos.html', materias=materias, contenidos=contenidos, usuario=session['usuario'])
+
+
+@app.route('/profesor/contenidos/upload', methods=['POST'])
+def profesor_subir_contenido():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para realizar esta acción.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    id_materia = request.form.get('id_materia')
+    titulo = request.form.get('titulo')
+    descripcion = request.form.get('descripcion')
+
+    if 'archivo' not in request.files:
+        flash('No se encontró archivo para subir.', 'error')
+        return redirect(url_for('profesor_contenidos'))
+
+    archivo = request.files['archivo']
+    if archivo.filename == '':
+        flash('No se seleccionó ningún archivo.', 'error')
+        return redirect(url_for('profesor_contenidos'))
+
+    if archivo and allowed_content_file(archivo.filename):
+        filename = secure_filename(f"{id_profesor}_{int(time.time())}_{archivo.filename}")
+        carpeta_profesor = os.path.join(CONTENT_UPLOAD_FOLDER, str(id_profesor))
+        os.makedirs(carpeta_profesor, exist_ok=True)
+        ruta_absoluta = os.path.join(carpeta_profesor, filename)
+        try:
+            archivo.save(ruta_absoluta)
+            ruta_relativa = os.path.join('uploads', 'contenidos', str(id_profesor), filename).replace('\\','/')
+            # Registrar en BD
+            ProfesorController.subir_contenido(id_profesor, id_materia, titulo, descripcion, filename, archivo.mimetype, None, ruta_relativa)
+            flash('Contenido subido correctamente.', 'success')
+        except Exception as e:
+            app.logger.error(f"Error al guardar contenido: {e}")
+            flash('Ocurrió un error al subir el archivo.', 'error')
+    else:
+        flash('Tipo de archivo no permitido para contenidos.', 'error')
+
+    return redirect(url_for('profesor_contenidos'))
+
+
+@app.route('/contenidos/<int:id>/download')
+def descargar_contenido(id):
+    contenido = ProfesorController.obtener_contenido_por_id(id)
+    if not contenido:
+        flash('Contenido no encontrado.', 'error')
+        return redirect(url_for('home'))
+    ruta = contenido.get('ruta')
+    if not ruta:
+        flash('Ruta inválida del archivo.', 'error')
+        return redirect(url_for('home'))
+    # ruta está guardada relativa a la carpeta Static
+    try:
+        carpeta_rel = os.path.dirname(ruta)
+        nombre = os.path.basename(ruta)
+        carpeta_abs = os.path.join(app.static_folder, carpeta_rel)
+        return send_from_directory(carpeta_abs, nombre, as_attachment=True)
+    except Exception as e:
+        app.logger.error(f"Error al enviar archivo: {e}")
+        flash('Ocurrió un error al servir el archivo.', 'error')
+        return redirect(url_for('home'))
+
+
+@app.route('/profesor/contenidos/<int:id>/eliminar', methods=['POST'])
+def eliminar_contenido(id):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para realizar esta acción.", "error")
+        return redirect(url_for('home'))
+
+    fila = ProfesorController.eliminar_contenido(id)
+    if fila:
+        try:
+            # fila puede ser una tupla con ruta, filename
+            if isinstance(fila, (list, tuple)) and fila[0]:
+                ruta = fila[0]
+                archivo_abs = os.path.join(app.static_folder, ruta)
+                if os.path.exists(archivo_abs):
+                    os.remove(archivo_abs)
+            flash('Contenido eliminado correctamente.', 'success')
+        except Exception as e:
+            app.logger.error(f"Error al eliminar archivo del disco: {e}")
+    else:
+        flash('No se pudo eliminar el contenido.', 'error')
+    return redirect(url_for('profesor_contenidos'))
+
+
+@app.route('/profesor/contenidos/<int:id>/editar', methods=['GET', 'POST'])
+def editar_contenido(id):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para realizar esta acción.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    contenido = ProfesorController.obtener_contenido_por_id(id)
+    if not contenido:
+        flash('Contenido no encontrado.', 'error')
+        return redirect(url_for('profesor_contenidos'))
+
+    # Verificar que el profesor propietario sea el mismo
+    if int(contenido.get('id_profesor')) != int(id_profesor):
+        flash('No tienes permiso para editar este contenido.', 'error')
+        return redirect(url_for('profesor_contenidos'))
+
+    materias = ProfesorController.obtener_materias_asignadas(id_profesor)
+
+    if request.method == 'POST':
+        id_materia = request.form.get('id_materia')
+        titulo = request.form.get('titulo')
+        descripcion = request.form.get('descripcion')
+
+        # Datos actuales
+        filename = contenido.get('filename')
+        ruta_relativa = contenido.get('ruta')
+        mimetype = contenido.get('mimetype')
+
+        # Procesar posible archivo nuevo
+        if 'archivo_nuevo' in request.files:
+            archivo_nuevo = request.files['archivo_nuevo']
+            if archivo_nuevo and archivo_nuevo.filename != '':
+                if allowed_content_file(archivo_nuevo.filename):
+                    nuevo_filename = secure_filename(f"{id_profesor}_{int(time.time())}_{archivo_nuevo.filename}")
+                    carpeta_profesor = os.path.join(CONTENT_UPLOAD_FOLDER, str(id_profesor))
+                    os.makedirs(carpeta_profesor, exist_ok=True)
+                    ruta_absoluta = os.path.join(carpeta_profesor, nuevo_filename)
+                    try:
+                        archivo_nuevo.save(ruta_absoluta)
+                        nueva_ruta_rel = os.path.join('uploads', 'contenidos', str(id_profesor), nuevo_filename).replace('\\','/')
+                        # eliminar archivo antiguo si existe
+                        try:
+                            if ruta_relativa:
+                                antiguo_abs = os.path.join(app.static_folder, ruta_relativa)
+                                if os.path.exists(antiguo_abs):
+                                    os.remove(antiguo_abs)
+                        except Exception:
+                            app.logger.warning('No se pudo eliminar archivo antiguo, continúo.')
+
+                        # actualizar valores para guardar en BD
+                        filename = nuevo_filename
+                        ruta_relativa = nueva_ruta_rel
+                        mimetype = archivo_nuevo.mimetype
+                    except Exception as e:
+                        app.logger.error(f"Error al guardar nuevo archivo: {e}")
+                        flash('Error al guardar el archivo nuevo.', 'error')
+                        return redirect(url_for('editar_contenido', id=id))
+                else:
+                    flash('Tipo de archivo no permitido para contenidos.', 'error')
+                    return redirect(url_for('editar_contenido', id=id))
+
+        # Actualizar en la BD
+        conexion = create_connection()
+        if conexion:
+            try:
+                cursor = conexion.cursor()
+                cursor.execute(
+                    """
+                    UPDATE contenidos_materia
+                    SET id_materia=%s, titulo=%s, descripcion=%s, filename=%s, mimetype=%s, ruta=%s
+                    WHERE id=%s
+                    """,
+                    (id_materia, titulo, descripcion, filename, mimetype, ruta_relativa, id)
+                )
+                conexion.commit()
+                flash('Contenido actualizado correctamente.', 'success')
+            except Exception as e:
+                app.logger.error(f"Error al actualizar contenido en BD: {e}")
+                try:
+                    conexion.rollback()
+                except Exception:
+                    pass
+                flash('Ocurrió un error al actualizar el contenido.', 'error')
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+                try:
+                    conexion.close()
+                except Exception:
+                    pass
+
+        return redirect(url_for('profesor_contenidos'))
+
+    return render_template('profesor/editar_contenido.html', contenido=contenido, materias=materias, usuario=session['usuario'])
+
+
+@app.route('/materia/<int:id>/contenidos')
+def ver_contenidos_materia(id):
+    # Vista para estudiantes: muestra contenidos por materia
+    contenidos = ProfesorController.listar_contenidos_por_profesor_materia(id_profesor=None, id_materia=id)
+    return render_template('estudiante/contenidos_profesor.html', contenidos=contenidos, usuario=session.get('usuario'))
+
+
 @app.route('/profesor/subir_hoja', methods=['POST'])
 def subir_hoja():
     if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
@@ -1113,7 +1324,7 @@ def indices():
         except Exception as e:
             flash(f"Error al cargar índices: {str(e)}", "error")
     
-    return render_template('profesor/indices.html', materias=materias, indices=indices_list, id_materia_actual=id_materia)
+    return render_template('profesor/indices.html', materias=materias, indices=indices_list, id_materia_actual=id_materia, usuario=session['usuario'])
 
 @app.route('/profesor/crear_indice', methods=['GET', 'POST'])
 def crear_indice():
@@ -1155,7 +1366,7 @@ def crear_indice():
         else:
             flash(resultado['message'], "error")
     
-    return render_template('profesor/crear_indice.html', id_materia=id_materia)
+    return render_template('profesor/crear_indice.html', id_materia=id_materia, usuario=session['usuario'])
 
 @app.route('/profesor/evaluar_indice/<int:id_indice>', methods=['GET', 'POST'])
 def evaluar_indice(id_indice):
@@ -1200,7 +1411,7 @@ def evaluar_indice(id_indice):
         evaluaciones = IndicesController.obtener_evaluaciones_indice(id_indice)
         ultima_evaluacion = evaluaciones[0] if evaluaciones else None
         
-        return render_template('profesor/evaluar_indice.html', indice=indice, evaluaciones=evaluaciones, ultima_evaluacion=ultima_evaluacion)
+        return render_template('profesor/evaluar_indice.html', indice=indice, evaluaciones=evaluaciones, ultima_evaluacion=ultima_evaluacion, usuario=session['usuario'])
     
     except Exception as e:
         flash(f"Error al cargar índice: {str(e)}", "error")
@@ -1246,7 +1457,7 @@ def editar_indice(id_indice):
             else:
                 flash(resultado['message'], "error")
         
-        return render_template('profesor/crear_indice.html', indice=indice, id_materia=indice['id_materia'])
+        return render_template('profesor/crear_indice.html', indice=indice, id_materia=indice['id_materia'], usuario=session['usuario'])
     
     except Exception as e:
         flash(f"Error al cargar índice: {str(e)}", "error")
@@ -1491,6 +1702,87 @@ def descargar_calificaciones():
 
 # Ruta: Mis Notificaciones (nueva)
 # Ruta: Mis Notificaciones (nueva)
+@app.route('/estudiante/ver_contenidos', methods=['GET', 'POST'])
+def ver_contenidos_estudiante():
+    """Vista para que estudiantes vean y descarguen contenidos de sus materias inscritas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+    
+    id_estudiante = session['usuario']['id']
+    
+    try:
+        # Obtener materias inscritas
+        materias = EstudianteController.obtener_materias_asignadas(id_estudiante)
+        
+        # Obtener contenidos (filtrar por materia si se selecciona)
+        id_materia = None
+        if request.method == 'POST':
+            id_materia = request.form.get('id_materia')
+            if id_materia:
+                try:
+                    id_materia = int(id_materia)
+                except (ValueError, TypeError):
+                    id_materia = None
+        
+        contenidos = EstudianteController.obtener_contenidos_inscritos(id_estudiante, id_materia)
+        
+        return render_template(
+            'estudiante/ver_contenidos.html',
+            usuario=session['usuario'],
+            materias=materias,
+            contenidos=contenidos,
+            id_materia_actual=id_materia
+        )
+    except Exception as e:
+        tb = traceback.format_exc()
+        app.logger.error(f"Error al cargar contenidos: {e}\n{tb}")
+        flash("Ocurrió un error al cargar los contenidos.", "error")
+        return redirect(url_for('estudiante_dashboard'))
+
+@app.route('/estudiante/descargar_contenido/<int:id_contenido>')
+def descargar_contenido_estudiante(id_contenido):
+    """Permite a estudiantes descargar contenidos de sus materias inscritas."""
+    if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    id_estudiante = session['usuario']['id']
+    
+    try:
+        conexion = create_connection()
+        if conexion:
+            cursor = conexion.cursor(dictionary=True)
+            # Verificar que el contenido pertenece a una materia inscrita del estudiante
+            query = """
+            SELECT c.* FROM contenidos_materia c
+            JOIN inscripciones i ON c.id_materia = i.id_materia
+            WHERE c.id = %s AND i.id_estudiante = %s
+            """
+            cursor.execute(query, (id_contenido, id_estudiante))
+            contenido = cursor.fetchone()
+            cursor.close()
+            conexion.close()
+            
+            if not contenido:
+                flash("Contenido no encontrado o sin permisos.", "error")
+                return redirect(url_for('ver_contenidos_estudiante'))
+            
+            # Construir ruta del archivo
+            file_path = os.path.join(app.root_path, 'Static', contenido['ruta'])
+            
+            if os.path.exists(file_path):
+                return send_file(file_path, as_attachment=True, download_name=contenido['filename'])
+            else:
+                flash("El archivo no se encuentra en el servidor.", "error")
+                return redirect(url_for('ver_contenidos_estudiante'))
+        else:
+            flash("Error al conectar a la base de datos.", "error")
+            return redirect(url_for('ver_contenidos_estudiante'))
+    except Exception as e:
+        app.logger.error(f"Error al descargar contenido: {e}")
+        flash("Ocurrió un error al descargar el archivo.", "error")
+        return redirect(url_for('ver_contenidos_estudiante'))
+
 @app.route('/estudiante/notificaciones')
 def notificaciones_estudiante():
     if 'usuario' not in session or session['usuario']['tipo'] != 'estudiante':

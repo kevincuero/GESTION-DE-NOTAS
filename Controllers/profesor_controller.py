@@ -300,43 +300,164 @@ class ProfesorController:
         """Envía notificación EN PLATAFORMA (sin correo electrónico)."""
         from Models.notificacion import Notificacion
         return Notificacion.crear(id_estudiante, id_profesor, titulo, mensaje)
-    
-# ----Funcion para que funcione el pytest de docente ----
-@staticmethod
-def obtener_estudiantes_de_profesor(id_profesor):
-    conexion = create_connection()
-    if not conexion:
-        return []
 
-    cursor = conexion.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT DISTINCT e.id, e.nombre
-        FROM estudiantes e
-        JOIN notas n ON n.id_estudiante = e.id
-        WHERE n.id_profesor = %s
-    """, (id_profesor,))
-    resultado = cursor.fetchall()
-    cursor.close()
-    conexion.close()
+    # -------------------
+    # Contenidos (recursos de materia)
+    # -------------------
+    @staticmethod
+    def subir_contenido(id_profesor, id_materia, titulo, descripcion, filename, mimetype, tamano, ruta_relativa, tipo='archivo'):
+        """Registra un contenido subido por el profesor para una materia."""
+        conexion = create_connection()
+        if not conexion:
+            return False
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("""
+                INSERT INTO contenidos_materia (id_profesor, id_materia, titulo, descripcion, tipo, filename, mimetype, tamano, ruta, fecha_subida)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """, (id_profesor, id_materia, titulo, descripcion, tipo, filename, mimetype, tamano, ruta_relativa))
+            conexion.commit()
+            return True
+        except Exception as e:
+            print(f"Error al subir contenido: {e}")
+            try:
+                conexion.rollback()
+            except Exception:
+                pass
+            return False
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
 
-    return resultado
+    @staticmethod
+    def listar_contenidos_por_profesor_materia(id_profesor=None, id_materia=None):
+        """Lista contenidos filtrando por profesor y/o materia. Si no se especifica, lista todos."""
+        conexion = create_connection()
+        if not conexion:
+            return []
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            base = "SELECT * FROM contenidos_materia"
+            condiciones = []
+            params = []
+            if id_profesor:
+                condiciones.append("id_profesor = %s")
+                params.append(id_profesor)
+            if id_materia:
+                condiciones.append("id_materia = %s")
+                params.append(id_materia)
+            if condiciones:
+                base += " WHERE " + " AND ".join(condiciones)
+            base += " ORDER BY fecha_subida DESC"
+            cursor.execute(base, tuple(params))
+            return cursor.fetchall()
+        except Exception as e:
+            print(f"Error al listar contenidos: {e}")
+            return []
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
 
-@staticmethod
-def buscar_estudiante_por_nombre(id_profesor, nombre):
-    conexion = create_connection()
-    if not conexion:
-        return []
+    @staticmethod
+    def obtener_contenido_por_id(id_contenido):
+        conexion = create_connection()
+        if not conexion:
+            return None
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM contenidos_materia WHERE id = %s", (id_contenido,))
+            return cursor.fetchone()
+        except Exception as e:
+            print(f"Error al obtener contenido por id: {e}")
+            return None
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
 
-    cursor = conexion.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT DISTINCT e.id, e.nombre
-        FROM estudiantes e
-        JOIN notas n ON n.id_estudiante = e.id
-        WHERE n.id_profesor = %s AND e.nombre LIKE %s
-    """, (id_profesor, f"%{nombre}%"))
-    
-    resultado = cursor.fetchall()
-    cursor.close()
-    conexion.close()
+    @staticmethod
+    def eliminar_contenido(id_contenido):
+        conexion = create_connection()
+        if not conexion:
+            return False
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("SELECT ruta, filename FROM contenidos_materia WHERE id = %s", (id_contenido,))
+            fila = cursor.fetchone()
+            # eliminar registro
+            cursor.execute("DELETE FROM contenidos_materia WHERE id = %s", (id_contenido,))
+            conexion.commit()
+            return fila
+        except Exception as e:
+            print(f"Error al eliminar contenido: {e}")
+            try:
+                conexion.rollback()
+            except Exception:
+                pass
+            return False
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
 
-    return resultado
+    # ----Funcion para que funcione el pytest de docente ----
+    @staticmethod
+    def obtener_estudiantes_de_profesor(id_profesor):
+        conexion = create_connection()
+        if not conexion:
+            return []
+
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT DISTINCT e.id, e.nombre
+            FROM estudiantes e
+            JOIN notas n ON n.id_estudiante = e.id
+            WHERE n.id_profesor = %s
+        """, (id_profesor,))
+        resultado = cursor.fetchall()
+        cursor.close()
+        conexion.close()
+
+        return resultado
+
+    @staticmethod
+    def buscar_estudiante_por_nombre(id_profesor, nombre):
+        conexion = create_connection()
+        if not conexion:
+            return []
+
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT DISTINCT e.id, e.nombre
+            FROM estudiantes e
+            JOIN notas n ON n.id_estudiante = e.id
+            WHERE n.id_profesor = %s AND e.nombre LIKE %s
+        """, (id_profesor, f"%{nombre}%"))
+        
+        resultado = cursor.fetchall()
+        cursor.close()
+        conexion.close()
+
+        return resultado

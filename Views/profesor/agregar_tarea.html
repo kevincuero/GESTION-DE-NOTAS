@@ -3,9 +3,16 @@
 {% block title %}Agregar Tarea - Profesor{% endblock %}
 
 {% block main_content %}
-    <div class="content-header">
-        <h1><i class="fas fa-tasks"></i> Agregar Tarea</h1>
-        <p class="subtitle">Crea una tarea para una materia asignada: selecciona materia, tipo, fecha y hora de entrega.</p>
+    <div class="content-header" style="position:relative;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <div>
+                <h1><i class="fas fa-tasks"></i> Agregar Tarea</h1>
+                <p class="subtitle">Crea una tarea para una materia asignada: selecciona materia, tipo, fecha y hora de entrega.</p>
+            </div>
+            <div class="header-actions" style="display:flex; gap:8px; position:absolute; top:18px; right:160px;">
+                <a href="{{ url_for('profesor_ver_entregas') }}" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:8px;"><i class="fas fa-folder-open"></i> Ver entregas</a>
+            </div>
+        </div>
     </div>
 
     <div class="edit-container">

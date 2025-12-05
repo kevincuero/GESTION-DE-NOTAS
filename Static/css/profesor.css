@@ -50,6 +50,8 @@ body {
     color: #4361ee;
 }
 
+/* Sidebar ordering: keep natural flow. Logout will be pushed to bottom via margin-top:auto */
+
 /* Modal para Promediar Índice */
 .modal {
     position: fixed;
@@ -263,24 +265,28 @@ body {
 }
 
 .sidebar .btn-logout {
-    margin-top: 2rem;
+    /* Keep logout at bottom but make it clearly visible */
+    margin-top: auto; /* pushes it to the bottom of the sidebar */
+    margin-bottom: 1rem;
+    margin-left: 0.6rem;
     background: #f72585;
     color: #fff;
     border: none;
     border-radius: 8px;
-    padding: 0.7rem 1rem;
+    padding: 0.7rem 1.1rem;
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    transition: background 0.2s;
+    box-shadow: 0 6px 18px rgba(247,37,133,0.12);
+    transition: background 0.12s, transform 0.08s;
 }
 
 .sidebar .btn-logout:hover {
     background: #d61e5b;
-    transform: translateY(17px);
+    transform: translateY(-1px);
 }
 
 /* Main Content Area */

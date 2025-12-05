@@ -1,0 +1,98 @@
+{% extends 'profesor/base.html' %}
+
+{% block title %}Ver Entregas - Profesor{% endblock %}
+
+{% block main_content %}
+<div class="content-header">
+    <h1><i class="fas fa-clipboard-list"></i> Ver Entregas por Materia</h1>
+    <p class="subtitle">Seleccione una materia y tarea para revisar las entregas de los estudiantes inscritos.</p>
+</div>
+
+<div class="edit-container">
+    <div class="edit-form-card">
+        <form method="get" action="{{ url_for('profesor_ver_entregas') }}">
+            <div class="form-group">
+                <label for="id_materia"><i class="fas fa-book"></i> Materia</label>
+                <select id="id_materia" name="id_materia" onchange="this.form.submit()">
+                    <option value="">-- Selecciona una materia --</option>
+                    {% for m in materias %}
+                        <option value="{{ m.id }}" {% if m.id|string == request.args.get('id_materia','') %}selected{% endif %}>{{ m.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if tareas %}
+            <div class="form-group">
+                <label for="id_tarea"><i class="fas fa-tasks"></i> Tarea</label>
+                <select id="id_tarea" name="id_tarea" onchange="this.form.submit()">
+                    <option value="">-- Todas las tareas --</option>
+                    {% for t in tareas %}
+                        <option value="{{ t.id }}" {% if t.id|string == request.args.get('id_tarea','') %}selected{% endif %}>{{ t.titulo }} - {{ t.fecha_entrega }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </form>
+
+        <hr />
+
+        {% if id_materia_selected %}
+            <h3>Estudiantes inscritos en {{ materia_nombre }}</h3>
+            {% if estudiantes %}
+                <table class="tabla" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="text-align:left;">
+                            <th>Estudiante</th>
+                            <th>Correo</th>
+                            <th>Entrega</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in estudiantes %}
+                        <tr>
+                            <td>{{ s.nombre }}</td>
+                            <td>{{ s.correo }}</td>
+                            <td>
+                                {% if entregas_map and entregas_map[s.id] %}
+                                    <a href="{{ url_for('descargar_entrega', id_entrega=entregas_map[s.id].id) }}" class="material-link"><i class="fas fa-download"></i> {{ entregas_map[s.id].filename }}</a>
+                                {% else %}
+                                    <span class="muted">Sin entrega</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entregas_map and entregas_map[s.id] %}
+                                    <form method="post" action="{{ url_for('calificar_entrega') }}" style="display:inline-block; margin-right:6px;">
+                                        <input type="hidden" name="id_entrega" value="{{ entregas_map[s.id].id }}" />
+                                        <input type="hidden" name="id_materia" value="{{ request.args.get('id_materia') }}" />
+                                        <input type="number" name="calificacion" step="0.01" min="0" max="100" placeholder="Calificación" style="width:120px;" />
+                                        <button class="btn btn-primary" type="submit">Calificar</button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('profesor_eliminar_entrega') }}" style="display:inline-block;">
+                                        <input type="hidden" name="id_entrega" value="{{ entregas_map[s.id].id }}" />
+                                        <input type="hidden" name="id_materia" value="{{ request.args.get('id_materia') }}" />
+                                        <button class="btn btn-danger" type="submit">Eliminar entrega</button>
+                                    </form>
+                                {% else %}
+                                    <span class="muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No hay estudiantes inscritos en esta materia.</p>
+            {% endif %}
+        {% else %}
+            <p>Selecciona una materia para ver sus estudiantes inscritos y las entregas.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.tabla th, .tabla td { padding:8px 10px; border-bottom:1px solid #eee; }
+.muted { color:#888; }
+</style>
+
+{% endblock %}

@@ -1016,6 +1016,159 @@ def agregar_tarea():
     return render_template('profesor/agregar_tarea.html', materias=materias, usuario=session['usuario'])
 
 
+@app.route('/profesor/ver_entregas', methods=['GET', 'POST'])
+def profesor_ver_entregas():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash("No tienes permisos para acceder a esta sección.", "error")
+        return redirect(url_for('home'))
+
+    id_profesor = session['usuario']['id']
+    materias = ProfesorController.obtener_materias_asignadas(id_profesor)
+
+    id_materia = request.args.get('id_materia')
+    id_tarea = request.args.get('id_tarea')
+
+    estudiantes = []
+    tareas = []
+    entregas_map = {}
+    materia_nombre = ''
+
+    conexion = create_connection()
+    if conexion:
+        try:
+            cursor = conexion.cursor(dictionary=True)
+            # Obtener tareas del profesor en la materia seleccionada
+            if id_materia:
+                cursor.execute("SELECT id, titulo, fecha_entrega FROM tareas_materia WHERE id_profesor=%s AND id_materia=%s ORDER BY fecha_entrega", (id_profesor, id_materia))
+                tareas = cursor.fetchall()
+                # obtener nombre materia
+                cursor.execute("SELECT nombre FROM materias WHERE id=%s", (id_materia,))
+                mrow = cursor.fetchone()
+                materia_nombre = mrow['nombre'] if mrow else ''
+
+                # Obtener estudiantes inscritos
+                cursor.execute("SELECT e.id, e.nombre, e.correo FROM inscripciones i JOIN estudiantes e ON i.id_estudiante = e.id WHERE i.id_materia=%s", (id_materia,))
+                estudiantes = cursor.fetchall()
+
+                # Si id_tarea especificada, obtener entregas para esa tarea
+                if id_tarea:
+                    cursor.execute("SELECT et.id, et.id_estudiante, et.filename, et.ruta, et.fecha_entrega, et.calificacion, et.comentario FROM entregas_tareas et WHERE et.id_tarea_materia=%s", (id_tarea,))
+                    entregas = cursor.fetchall()
+                    # mapear por id_estudiante
+                    entregas_map = { e['id_estudiante']: e for e in (entregas or []) }
+
+        except Exception as e:
+            app.logger.error(f"Error en ver_entregas: {e}")
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conexion.close()
+            except Exception:
+                pass
+
+    return render_template('profesor/ver_entregas.html', materias=materias, tareas=tareas, estudiantes=estudiantes, entregas_map=entregas_map, id_materia_selected=id_materia, materia_nombre=materia_nombre)
+
+
+@app.route('/profesor/descargar_entrega/<int:id_entrega>')
+def descargar_entrega(id_entrega):
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash('No tienes permisos para acceder a esta sección.', 'error')
+        return redirect(url_for('home'))
+    try:
+        conexion = create_connection()
+        if not conexion:
+            flash('Error de conexión.', 'error')
+            return redirect(url_for('profesor_contenidos'))
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute('SELECT et.*, tm.id_profesor FROM entregas_tareas et JOIN tareas_materia tm ON et.id_tarea_materia = tm.id WHERE et.id = %s', (id_entrega,))
+        row = cursor.fetchone()
+        cursor.close()
+        conexion.close()
+        if not row:
+            flash('Entrega no encontrada.', 'error')
+            return redirect(url_for('profesor_ver_entregas'))
+        # Verificar que el profesor es dueño de la tarea
+        if int(row.get('id_profesor')) != int(session['usuario']['id']):
+            flash('No tienes permiso para descargar esta entrega.', 'error')
+            return redirect(url_for('profesor_ver_entregas'))
+        ruta = row.get('ruta')
+        if not ruta:
+            flash('Ruta inválida.', 'error')
+            return redirect(url_for('profesor_ver_entregas'))
+        carpeta_rel = os.path.dirname(ruta)
+        nombre = os.path.basename(ruta)
+        carpeta_abs = os.path.join(app.static_folder, carpeta_rel)
+        return send_from_directory(carpeta_abs, nombre, as_attachment=True)
+    except Exception as e:
+        app.logger.error(f"Error descargando entrega: {e}")
+        flash('Ocurrió un error al descargar la entrega.', 'error')
+        return redirect(url_for('profesor_ver_entregas'))
+
+
+@app.route('/profesor/calificar_entrega', methods=['POST'])
+def calificar_entrega():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash('No tienes permisos para realizar esta acción.', 'error')
+        return redirect(url_for('home'))
+    id_entrega = request.form.get('id_entrega')
+    calificacion = request.form.get('calificacion')
+    try:
+        conexion = create_connection()
+        cursor = conexion.cursor()
+        cursor.execute('UPDATE entregas_tareas SET calificacion=%s WHERE id=%s', (calificacion, id_entrega))
+        conexion.commit()
+        cursor.close()
+        conexion.close()
+        flash('Calificación registrada.', 'success')
+    except Exception as e:
+        app.logger.error(f"Error al calificar entrega: {e}")
+        flash('Ocurrió un error al guardar la calificación.', 'error')
+    return redirect(url_for('profesor_ver_entregas', id_materia=request.form.get('id_materia') or ''))
+
+
+@app.route('/profesor/eliminar_entrega', methods=['POST'])
+def profesor_eliminar_entrega():
+    if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':
+        flash('No tienes permisos para realizar esta acción.', 'error')
+        return redirect(url_for('home'))
+    id_entrega = request.form.get('id_entrega')
+    try:
+        conexion = create_connection()
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute('SELECT et.id, et.ruta, tm.id_profesor FROM entregas_tareas et JOIN tareas_materia tm ON et.id_tarea_materia = tm.id WHERE et.id = %s', (id_entrega,))
+        row = cursor.fetchone()
+        if not row:
+            cursor.close()
+            conexion.close()
+            flash('Entrega no encontrada.', 'error')
+            return redirect(url_for('profesor_ver_entregas'))
+        if int(row.get('id_profesor')) != int(session['usuario']['id']):
+            cursor.close()
+            conexion.close()
+            flash('No tienes permiso para eliminar esta entrega.', 'error')
+            return redirect(url_for('profesor_ver_entregas'))
+        # eliminar archivo
+        file_path = os.path.join(app.static_folder, row.get('ruta'))
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception:
+            pass
+        # eliminar registro
+        cursor.execute('DELETE FROM entregas_tareas WHERE id=%s', (id_entrega,))
+        conexion.commit()
+        cursor.close()
+        conexion.close()
+        flash('Entrega eliminada correctamente.', 'success')
+    except Exception as e:
+        app.logger.error(f"Error al eliminar entrega (profesor): {e}")
+        flash('Ocurrió un error al eliminar la entrega.', 'error')
+    return redirect(url_for('profesor_ver_entregas', id_materia=request.form.get('id_materia') or ''))
+
+
 @app.route('/profesor/contenidos/upload', methods=['POST'])
 def profesor_subir_contenido():
     if 'usuario' not in session or session['usuario']['tipo'] != 'profesor':

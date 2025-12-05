@@ -818,6 +818,13 @@ def profesor_dashboard():
 
     id_profesor = session['usuario']['id']
 
+    # ===== VERIFICAR Y GENERAR NOTIFICACIONES DE CONTENIDO DESACTUALIZADO =====
+    notificaciones_contenido = verificar_y_generar_notificaciones_contenido(id_profesor)
+    materias_estado = obtener_materias_con_estado_contenido(id_profesor)
+    
+    # Filtrar solo las materias en alerta (urgente o alerta)
+    materias_alerta = [m for m in materias_estado if m['estado_contenido'] in ['URGENTE', 'ALERTA']]
+
     conexion = create_connection()
     estudiantes_por_materia = []
     promedios_por_materia = []
@@ -855,7 +862,10 @@ def profesor_dashboard():
         labels=labels,
         data_estudiantes=data_estudiantes,
         data_promedios=data_promedios,
-        usuario=session['usuario']
+        usuario=session['usuario'],
+        materias_alerta=materias_alerta,
+        todas_materias_estado=materias_estado,
+        notificaciones_contenido=notificaciones_contenido
     )
 
 @app.route('/profesor/obtener_estudiantes', methods=['GET', 'POST'])
@@ -2811,6 +2821,177 @@ def obtener_eventos_mes(anio, mes):
 # --------------------------
 # Main
 # --------------------------
+
+# ================================
+# Funciones auxiliares para notificaciones de contenido
+# ================================
+
+def verificar_y_generar_notificaciones_contenido(id_profesor=None):
+    """
+    Verifica si alguna materia del profesor no ha sido actualizada en 3+ días.
+    Si es así, genera una notificación al profesor.
+    
+    Args:
+        id_profesor (int, optional): Si es None, verifica todos los profesores.
+    
+    Returns:
+        dict: {'status': 'ok', 'notificaciones_creadas': int, 'materias_alerta': list}
+    """
+    try:
+        conexion = create_connection()
+        if not conexion:
+            return {'status': 'error', 'message': 'No hay conexión a la BD'}
+        
+        cursor = conexion.cursor(dictionary=True)
+        
+        # Construir query
+        if id_profesor:
+            query = """
+            SELECT pac.id_profesor, pac.id_materia, m.nombre, pac.ultima_actualizacion, pac.notificacion_enviada
+            FROM profesor_actualizaciones_contenido pac
+            JOIN materias m ON pac.id_materia = m.id
+            WHERE pac.id_profesor = %s
+            ORDER BY pac.ultima_actualizacion ASC
+            """
+            cursor.execute(query, (id_profesor,))
+        else:
+            query = """
+            SELECT pac.id_profesor, pac.id_materia, m.nombre, pac.ultima_actualizacion, pac.notificacion_enviada
+            FROM profesor_actualizaciones_contenido pac
+            JOIN materias m ON pac.id_materia = m.id
+            ORDER BY pac.ultima_actualizacion ASC
+            """
+            cursor.execute(query)
+        
+        registros = cursor.fetchall()
+        materias_alerta = []
+        notificaciones_creadas = 0
+        
+        for registro in registros:
+            from datetime import datetime, timedelta
+            
+            id_prof = registro['id_profesor']
+            id_mat = registro['id_materia']
+            nombre_mat = registro['nombre']
+            ultima_act = registro['ultima_actualizacion']
+            ya_notificada = registro['notificacion_enviada']
+            
+            # Convertir a datetime si es string
+            if isinstance(ultima_act, str):
+                ultima_act = datetime.fromisoformat(ultima_act.replace('Z', '+00:00'))
+            
+            dias_sin_actualizar = (datetime.now() - ultima_act.replace(tzinfo=None)).days
+            
+            # Si han pasado 3 o más días y no se ha enviado notificación
+            if dias_sin_actualizar >= 3 and not ya_notificada:
+                # Crear notificación
+                cursor.execute("""
+                    INSERT INTO notificaciones (
+                        id_profesor,
+                        id_estudiante,
+                        titulo,
+                        mensaje,
+                        leida,
+                        fecha
+                    ) VALUES (%s, %s, %s, %s, %s, NOW())
+                """, (
+                    id_prof,
+                    None,  # NULL porque es al profesor
+                    f'Contenido desactualizado: {nombre_mat}',
+                    f'Hace {dias_sin_actualizar} días no actualizas el contenido de "{nombre_mat}". Por favor, sube material actualizado para mantener a tus estudiantes informados.',
+                    False
+                ))
+                
+                # Marcar como notificada
+                cursor.execute("""
+                    UPDATE profesor_actualizaciones_contenido
+                    SET notificacion_enviada = TRUE, fecha_notificacion = NOW()
+                    WHERE id_profesor = %s AND id_materia = %s
+                """, (id_prof, id_mat))
+                
+                notificaciones_creadas += 1
+                materias_alerta.append({
+                    'materia': nombre_mat,
+                    'dias': dias_sin_actualizar
+                })
+            elif dias_sin_actualizar >= 3:
+                # Agregar a lista de alerta sin crear nueva notificación
+                materias_alerta.append({
+                    'materia': nombre_mat,
+                    'dias': dias_sin_actualizar
+                })
+        
+        conexion.commit()
+        cursor.close()
+        conexion.close()
+        
+        return {
+            'status': 'ok',
+            'notificaciones_creadas': notificaciones_creadas,
+            'materias_alerta': materias_alerta
+        }
+    
+    except Exception as e:
+        print(f"Error en verificar_y_generar_notificaciones_contenido: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e),
+            'notificaciones_creadas': 0,
+            'materias_alerta': []
+        }
+
+
+def obtener_materias_con_estado_contenido(id_profesor):
+    """
+    Obtiene las materias del profesor con el estado de actualización de contenido.
+    
+    Returns:
+        list: [{id, nombre, dias_sin_actualizar, estado, color}]
+    """
+    try:
+        conexion = create_connection()
+        if not conexion:
+            return []
+        
+        cursor = conexion.cursor(dictionary=True)
+        
+        query = """
+        SELECT 
+            m.id,
+            m.nombre,
+            COALESCE(
+                DATEDIFF(CURDATE(), DATE(pac.ultima_actualizacion)),
+                999
+            ) as dias_sin_actualizar,
+            CASE 
+                WHEN COALESCE(DATEDIFF(CURDATE(), DATE(pac.ultima_actualizacion)), 999) >= 3 THEN 'URGENTE'
+                WHEN COALESCE(DATEDIFF(CURDATE(), DATE(pac.ultima_actualizacion)), 999) >= 2 THEN 'ALERTA'
+                ELSE 'ACTUALIZADO'
+            END as estado_contenido,
+            CASE 
+                WHEN COALESCE(DATEDIFF(CURDATE(), DATE(pac.ultima_actualizacion)), 999) >= 3 THEN '#f72585'
+                WHEN COALESCE(DATEDIFF(CURDATE(), DATE(pac.ultima_actualizacion)), 999) >= 2 THEN '#ffc107'
+                ELSE '#28a745'
+            END as color
+        FROM asignaciones a
+        JOIN materias m ON a.id_materia = m.id
+        LEFT JOIN profesor_actualizaciones_contenido pac ON a.id_profesor = pac.id_profesor AND a.id_materia = pac.id_materia
+        WHERE a.id_profesor = %s
+        ORDER BY dias_sin_actualizar DESC
+        """
+        
+        cursor.execute(query, (id_profesor,))
+        materias = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        return materias if materias else []
+    
+    except Exception as e:
+        print(f"Error en obtener_materias_con_estado_contenido: {str(e)}")
+        return []
+
 
 # --------------------------------
 # Factory para pytest

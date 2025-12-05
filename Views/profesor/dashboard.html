@@ -4,6 +4,112 @@
 
 {% block extra_head %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .alertas-section {
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .alerta-card {
+      background: #fff;
+      border-left: 4px solid;
+      padding: 1.2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    .alerta-urgente {
+      border-left-color: #f72585;
+      background: linear-gradient(135deg, #fff 0%, rgba(247,37,133,0.04) 100%);
+    }
+
+    .alerta-alerta {
+      border-left-color: #ffc107;
+      background: linear-gradient(135deg, #fff 0%, rgba(255,193,7,0.04) 100%);
+    }
+
+    .alerta-actualizado {
+      border-left-color: #28a745;
+      background: linear-gradient(135deg, #fff 0%, rgba(40,167,69,0.04) 100%);
+    }
+
+    .alerta-titulo {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 1.05rem;
+    }
+
+    .alerta-icono {
+      font-size: 1.3rem;
+      min-width: 1.5rem;
+      text-align: center;
+    }
+
+    .alerta-urgente .alerta-icono {
+      color: #f72585;
+    }
+
+    .alerta-alerta .alerta-icono {
+      color: #ffc107;
+    }
+
+    .alerta-actualizado .alerta-icono {
+      color: #28a745;
+    }
+
+    .alerta-dias {
+      display: block;
+      color: #666;
+      font-size: 0.95rem;
+      margin-top: 0.4rem;
+    }
+
+    .alerta-banner {
+      background: linear-gradient(135deg, #f72585 0%, #d61e5b 100%);
+      color: #fff;
+      padding: 1.2rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .alerta-banner i {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .alerta-banner-texto h3 {
+      margin: 0 0 0.3rem 0;
+      font-size: 1.05rem;
+    }
+
+    .alerta-banner-texto p {
+      margin: 0;
+      font-size: 0.95rem;
+      opacity: 0.95;
+    }
+
+    .link-contenidos {
+      display: inline-block;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 0.6rem;
+      border-bottom: 2px solid #fff;
+      transition: opacity 0.2s;
+    }
+
+    .link-contenidos:hover {
+      opacity: 0.8;
+    }
+  </style>
 {% endblock %}
 
 {% block main_content %}
@@ -11,8 +117,50 @@
     <h1 class="welcome-message">Bienvenido, {{ usuario['nombre'] }}</h1>
   </div>
 
+  <!-- Alertas de contenido desactualizado -->
+  {% if materias_alerta|length > 0 %}
+  <div class="alerta-banner">
+    <i class="fas fa-exclamation-circle"></i>
+    <div class="alerta-banner-texto">
+      <h3><i class="fas fa-bell"></i> Contenido desactualizado</h3>
+      <p>Tienes {{ materias_alerta|length }} materia(s) sin actualizar contenido hace más de 2 días.</p>
+      <a href="{{ url_for('profesor_contenidos') }}" class="link-contenidos">Ir a actualizar contenidos →</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Estado de contenido de todas las materias -->
+  {% if todas_materias_estado|length > 0 %}
+  <div class="alertas-section">
+    <h3 style="grid-column: 1 / -1; margin: 1rem 0 0.5rem 0; color: #333;">Estado de actualización de contenidos por materia</h3>
+    {% for materia in todas_materias_estado %}
+    <div class="alerta-card alerta-{{ materia.estado_contenido|lower }}">
+      <div class="alerta-titulo">
+        <span class="alerta-icono">
+          {% if materia.estado_contenido == 'URGENTE' %}
+            <i class="fas fa-times-circle"></i>
+          {% elif materia.estado_contenido == 'ALERTA' %}
+            <i class="fas fa-exclamation-triangle"></i>
+          {% else %}
+            <i class="fas fa-check-circle"></i>
+          {% endif %}
+        </span>
+        <span>{{ materia.nombre }}</span>
+      </div>
+      <div class="alerta-dias">
+        {% if materia.dias_sin_actualizar == 999 %}
+          Sin contenido registrado
+        {% else %}
+          Hace {{ materia.dias_sin_actualizar }} día(s) de la última actualización
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- Gráficos -->
-  <div class="charts-section">
+  <div class="charts-section" style="margin-top: 2rem;">
     <div class="chart-card">
       <h3>Estudiantes por materia (Barras)</h3>
       <canvas id="barChart"></canvas>
